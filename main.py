@@ -8,7 +8,3 @@ st.set_page_config(
 st.write(
     '**Welcome to init page**'
 )
-
-st.sidebar(
-    'Select page'
-)
