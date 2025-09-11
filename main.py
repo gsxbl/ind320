@@ -64,7 +64,7 @@ def get_label():
 
 def main():
     out = st.session_state.out
-    if out: st.write(out)
+    if out: st.markdown(f'# {out}')
     
     label = get_label()
     # render button
