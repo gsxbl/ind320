@@ -34,9 +34,9 @@ def click():
     if st.session_state.out == 'Ready':
         st.session_state.out = random.randint(1, 100)
     
-    i = st.session_state.out
 
-    if i > 1:
+    if st.session_state.out > 1:
+        i = st.session_state.out
         # output is even
         if i % 2 == 0:
             st.session_state.out //= 2
@@ -45,6 +45,8 @@ def click():
         elif i % 2 != 0:
             st.session_state.out *= 3
             st.session_state.out += 1
+    else:
+        st.balloons()
     
 
 def get_label():
