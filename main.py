@@ -25,50 +25,15 @@ with st.expander('Task description'):
         '''
     )
 
-# container for the random integers
-if 'out' not in st.session_state:
-    st.session_state.out = 'Ready'
-
-def click():
-    # no output exists
-    if st.session_state.out == 'Ready':
-        st.session_state.out = random.randint(1, 100)
+def init():
+    if 'label' not in st.session_state:
+        st.session_state.label = 'Start'
     
-    i = st.session_state.out
+    if 'out' not in st.session_state:
+        st.session_state.out = 'Ready'
 
-    if i > 1:
-        # output is even
-        if i % 2 == 0:
-            st.session_state.out //= 2
-        
-        # output is odd
-        elif i % 2 != 0:
-            st.session_state.out *= 3
-            st.session_state.out += 1
-    
+def run():
+    init()
 
-def get_label():
-    if st.session_state.out == 'Ready':
-        return 'Start'
-    
-    if st.session_state.out == 1:
-        return 'Done'
-
-    if st.session_state.out % 2 == 0:
-        return 'Half it'
-    
-    if st.session_state.out % 2 != 0:
-        return 'Triple it'
-
-
-
-def main():
-    out = st.session_state.out
-    if out: st.markdown(f'# {out}')
-    
-    label = get_label()
-    # render button
-    st.button(label, on_click=click)
-
-
-main()
+    if st.button(st.session_state.label):
+        pass
