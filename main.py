@@ -26,14 +26,14 @@ with st.expander('Task description'):
     )
 
 def init():
-    if 'label' not in st.session_state:
-        st.session_state.label = 'Start'
-    
+    '''Initializes cached objects'''
     if 'out' not in st.session_state:
-        st.session_state.out = 'Ready'
+        st.session_state.out = 'Read'
+    if 'val' not in st.session_state:
+        st.session_state = None
 
 def run():
     init()
 
-    if st.button(st.session_state.label):
-        pass
+if __name__ == '__main__':
+    run()
