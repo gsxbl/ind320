@@ -1,7 +1,7 @@
 import streamlit as st
 from modules.fetch import csv_data, agg_first_month
 
-class Main:
+class Page2:
     def __init__(self):
         st.set_page_config(layout='wide')
         st.header('Dummypage 2')
@@ -28,5 +28,5 @@ class Main:
         self.setup_contents()
 
 if __name__ == '__main__':
-    main = Main()
+    main = Page2()
     main.run()
