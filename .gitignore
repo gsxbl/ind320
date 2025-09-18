@@ -5,3 +5,6 @@ secrets.toml
 Dockerfile
 requirements.txt
 docker-compose.yml
+
+# local dev
+dev.ipynb
