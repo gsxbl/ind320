@@ -28,7 +28,7 @@ class Main:
                 '''
             )
             
-        self._keys = [f"Task {i}" for i in range(5)]
+        self._keys = [f"Task {i}" for i in range(4)]
 
     # Reusable callback
     def show_balloons(self):
