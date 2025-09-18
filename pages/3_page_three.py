@@ -15,23 +15,29 @@ class Page3:
         self._get_months()
     
     def _get_months(self):
-        # Convert to year-month format
         months = self._df.index.to_period("M")
-        # Unique sorted year-months
         self._months = months.sort_values().unique()
         
         
     def plot(self):
-        if self._column:
-            fig = go.Figure()
+        if not isinstance(self._column, list):
+            self._column = list(self._column)
 
+        fig = go.Figure()
+        for col in self._column:
             fig.add_trace(
                 go.Scatter(
                     x=self._df.index,
-                    y=self._df[self._column],
-                    name=self._column, yaxis="y1"))
+                    y=self._df[col],
+                    name=col, yaxis="y1"))
             
-            st.plotly_chart(fig)
+            fig.update_layout(
+                title=f'Timeseries of Weather data',
+                yaxis=dict(
+                    title=f'Measured Unit Value'
+                )
+            )
+        st.plotly_chart(fig)
 
     def slice_data(self):
         start, stop = self._slice
@@ -42,7 +48,7 @@ class Page3:
 
     # --- PAGE CONTENTS ---
     def setup_contents(self):
-        self._column = st.selectbox('Columns', self._df.columns)
+        self._column = st.multiselect('Columns', self._df.columns)
         self._slice = st.select_slider(
             "Select time range",
             options=self._months,
