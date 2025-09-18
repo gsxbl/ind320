@@ -2,8 +2,9 @@ import streamlit as st
 import random
 
 st.set_page_config(
-    page_title='Entry Point',
-    page_icon='❂'
+    page_title='Ind320 - CA1 - gsxbl',
+    page_icon='❂',
+    layout='wide'
 )
 
 with st.expander('Task description, CA1'):
