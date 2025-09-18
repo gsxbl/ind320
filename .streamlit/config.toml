@@ -4,3 +4,6 @@ base = "dark"
 
 [server]
 runOnSave = true
+
+[ui]
+layout = "wide"
