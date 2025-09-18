@@ -6,22 +6,21 @@ st.set_page_config(
     page_icon='❂'
 )
 
-with st.expander('Task description'):
+with st.expander('Task description, CA1'):
     st.markdown(
         '''
-        1. Create a streamlit app with a single button and a single output.
-        2. On first time startup:
-        \t - The button should show the label “Start”.
-        \t - The output should say “Ready”
-        \t - When the button is pressed:
-        \t \t - A random integer between 1 and 100 is sampled and cached.
-        \t \t - The button label is changed to “Next”.
-        \t \t - The output should show the integer.
-        3. On subsequent button presses:
-        \t - If the integer is even, divide it by 2 and update the output and cache.
-        \t - If the integer is odd, multiply by 3 and add 1, then update the output and cache.
-        \t - The Collatz conjecture says that after clicking the button a sufficient amount of times, the integer will reach 1, no matter what the starting point was.
-        4. Extra: Let the button say “Half it” and “Triple and add one” based on the current integer shown.
+        ### Streamlit app
+        1. Create a Streamlit app including:
+            - requirements.txt (for package dependencies)
+            - Four pages (with dummy headers and test contents for now)
+        2. The front/home page should have a sidebar menu with navigation options to the other pages.
+        3. On the second page:
+            - A table showing the imported data (see below). Use the row-wise LineChartColumn() to display the first month of the data series.
+        4. On the third page:
+            - A plot of the imported data (see below), including header, axis titles and other relevant formatting.
+            - A drop-down menu (st.selectbox) choosing any single column in the CSV or all columns together.
+            - A selection slider (st.select_slider) to select a subset of the months. Defaults should be the first month.
+            - Data should be read from a local CSV-file (open-meteo-subset.csv), using caching for app speed.
         '''
     )
 
