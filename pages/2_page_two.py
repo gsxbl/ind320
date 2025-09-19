@@ -2,16 +2,24 @@ import streamlit as st
 from modules.fetch import csv_data, agg_first_month
 
 class Page2:
+    '''
+    This class represents the app page.
+    
+    Most page contents is rendered in the run method.
+    Properties are used to mimic global variables,
+    making them accessible to all methods.
+    '''
     def __init__(self):
+        # general page setup
         st.set_page_config(layout='wide')
-        st.header('Dummypage 2')
+        st.header('Weather (dummy)Data ')
 
-        self._df = csv_data('data/open-meteo-subset.csv', index_col=0, parse_dates=['time'])
+        # instantiate and cache data
+        self._df = csv_data('data/open-meteo-subset.csv',
+                            index_col=0, parse_dates=['time'])
 
     # --- PAGE CONTENTS ---
     def setup_contents(self):
-        # get the data, use custom function with caching
-
         # aggreagte the first month
         df = agg_first_month(self._df)
 

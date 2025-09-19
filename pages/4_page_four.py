@@ -1,6 +1,16 @@
 import streamlit as st
 
 class Page3:
+    '''
+    This class represents the app page.
+    
+    Most page contents is rendered in the run method.
+    Attributes are used to mimic global variables,
+    making them accessible to all methods.
+
+    Currently just a dummypage with cool content.
+    May 4th be with you.
+    '''
     def __init__(self):
         st.set_page_config(layout='wide')
 
