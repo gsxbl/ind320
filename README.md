@@ -16,7 +16,7 @@ app/
 │   └── config.toml
 │
 ├── data/
-│   └── open-meto-subset.csv
+│   └── open-meteo-subset.csv
 │
 ├── modules/
 │   ├── __init__.py
