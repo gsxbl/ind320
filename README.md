@@ -27,17 +27,22 @@ app/
 │   ├── 3_page_three.py
 │   └── 4_page_four.py
 │
+├── notebooks/
+│
 ├── .gitginore
 ├── main.py
 ├── requirements.txt
 └── README.md
 ```
 
-### Modules
-This folder contains per v1.0, some custom functions for streamlit-cached reading of csv-files
+### Modules/
+Contains per v1.0, some custom functions for streamlit-cached reading of csv-files
 
-### Pages
-This folder contains per v1.0, four different pages as per task description
+### Notebooks/
+All notebooks used to document development will be published here.
+
+### Pages/
+Contains per v1.0, four different pages as per task description
 
 ### Data
 This folder contains the supplied data for use in compulsory assignment 1, which corresponds to v1.0.
