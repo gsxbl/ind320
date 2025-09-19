@@ -3,7 +3,6 @@ secrets.toml
 
 # Docker stuff for local dev
 Dockerfile
-requirements.txt
 docker-compose.yml
 
 # local dev
