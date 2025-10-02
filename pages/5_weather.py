@@ -24,16 +24,20 @@ class Page5:
             self._kwargs['zip'] = st.text_input('Zip Code:')
             self._kwargs['cc'] = st.text_input('Country code:')
 
-    def get_geolocation(self):
-        self._Weather.geoCode.setup_query(
+    def _get_geolocation(self):
+        self._Weather.location(
             self._mode, **self._kwargs
             )
-        self._Weather.geoCode.search()
+          
+    def _get_forcast(self):
+        self._Weather.upcoming()
+        
 
 
     def run(self):
         self._setup_contents()
-        self.get_geolocation()
+        self._get_geolocation()
+        self._get_forcast()
 
 if __name__ == '__main__':
     page = Page5()
