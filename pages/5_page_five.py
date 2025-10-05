@@ -1,6 +1,6 @@
 import streamlit as st
 
-class Page3:
+class Page5:
     '''
     This class represents the app page.
     
@@ -22,4 +22,4 @@ class Page3:
                  width='stretch')
 
 if __name__ == '__main__': 
-    Page3()
+    Page5()
