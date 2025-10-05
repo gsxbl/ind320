@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-from modules.fetch import Mongo, months
+from modules.fetch import Mongo
 
 class Page4:
     '''
@@ -14,7 +14,9 @@ class Page4:
     def __init__(self):
         # general page setup
         st.set_page_config(layout='wide')
-        st.header('Elhub Data')
+        st.markdown(
+            '# Elhub data'
+        )
 
         # instantiate client
         self._db = Mongo()
@@ -51,7 +53,7 @@ class Page4:
         Method to get radio button selection from
         frontend
         '''
-        self._area = st.radio('Areas', self._areas,
+        self._area = st.radio('', self._areas,
                               horizontal=True)
     
     def _setup_pills(self):
@@ -60,15 +62,26 @@ class Page4:
         frontend
         '''
         self._group = st.pills(
-            'productionGroups', self._groups,
+            '', self._groups,
             selection_mode='multi',
-            default=self._groups[0])
+            default=self._groups[0],
+            )
 
     def _setup_slider(self):
-        self._start, self._stop = st.select_slider(
-            "Select time range",
-            options=self._timerange,
-            value=(self._timerange[0], self._timerange[-1])
+        with st.expander('Expand this for a redundant slicer'):
+            self._start, self._stop = st.select_slider(
+                "Select time range",
+                options=self._timerange,
+                value=(self._timerange[0], self._timerange[-1])
+                )
+
+    def _setup_doc(self):
+        with st.expander('Data source:'):
+            st.markdown(
+                'Data has been extracted from [Elhub](https://api.elhub.no), and shows Energy production in Norway in 2021.' \
+                '<br> iterate all months with<br>' \
+                'curl -X GET "https://api.elhub.no/energy-data/v0/price-areas?dataset=CONSUMPTION_PER_GROUP_MBA_HOUR&startDate=2021-01-01',
+                unsafe_allow_html=True
             )
 
     def _pie_chart(self):
@@ -76,6 +89,8 @@ class Page4:
         Method to get data from database and
         render pie chart to frontend.
         '''
+        
+
         df = self._db.find(
             query={
                 'priceArea': self._area,
@@ -88,12 +103,12 @@ class Page4:
 
         fig.add_trace(go.Pie(
             labels=df.index,
-            values=df['quantityKwh'] / 1e9 # TWh
+            values=df['quantityKwh'] / 1e9, # TWh
+            rotation=180,
             )
         )
 
-        fig.update_layout(margin=dict(l=20, r=20, b=20),
-                        title=f'Production, {self._area} [%, TWh]')
+        fig.update_layout(title=f'Production, {self._area} [%, TWh]')
         
         st.plotly_chart(fig)
 
@@ -127,32 +142,43 @@ class Page4:
             # create trace
             trace = go.Scatter(
                 x = df.index,
-                y = df['quantityKwh'],
+                y = df['quantityKwh'] / 1e3,
                 name=group
             )
             fig.add_trace(trace)
-        
+
+        fig.update_layout(
+            title=f'Production in {self._area}',
+            yaxis=dict(
+                title='Production [MWh]'
+            )
+        )
         # render to frontend
         st.plotly_chart(fig)
-
 
     # --- PAGE CONTENTS ---
     def _setup_contents(self):
         '''
-        Method to get user inputs from the frontend.
-        Slicer is rendered and input stored in the
-        self._slice property.
-        Relies heavily on contents of self._df.
+        Method to get setup all contents of the
+        frontend. Split into two columns for
+        different plots.
+        Selection in left column slices the data
+        in the right column.
         '''
+        # left column
         with self._c1:
+            st.markdown('## Pie chart')
             self._setup_radio()
             self._pie_chart()
-            
-
+        
+        # right column
         with self._c2:
+            st.markdown('## Timeseries')
             self._setup_pills()
             self._setup_slider()
             self._line_plot()
+        
+        self._setup_doc()
 
         
     def run(self):
