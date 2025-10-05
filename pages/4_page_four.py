@@ -34,13 +34,6 @@ class Page4:
         frontend pills selector
         '''
         self._groups = self._db.distinct(column='productionGroup')
-    
-    def _get_timerange(self):
-        '''
-        Method to get available time range for
-        frontend slider selector
-        '''
-        self._timerange = self._db.distinct(column='startTime')
 
     def _setup_columns(self):
         '''
@@ -53,9 +46,12 @@ class Page4:
         Method to get radio button selection from
         frontend
         '''
-        self._area = st.radio('', self._areas,
-                              horizontal=True)
-    
+        self._area = st.pills(
+            '', self._areas,
+            selection_mode='multi',
+            default=self._areas[0],
+            )
+        
     def _setup_pills(self):
         '''
         Method to get pill button selections from
@@ -66,14 +62,6 @@ class Page4:
             selection_mode='multi',
             default=self._groups[0],
             )
-
-    def _setup_slider(self):
-        with st.expander('Expand this for a redundant slicer'):
-            self._start, self._stop = st.select_slider(
-                "Select time range",
-                options=self._timerange,
-                value=(self._timerange[0], self._timerange[-1])
-                )
 
     def _setup_doc(self):
         with st.expander('Data source:'):
@@ -89,12 +77,13 @@ class Page4:
         Method to get data from database and
         render pie chart to frontend.
         '''
-        
+    
 
         df = self._db.find(
             query={
-                'priceArea': self._area,
-                },
+                'priceArea': {
+                    '$in': self._area,
+                }},
             index='startTime'
         )
         df = df.groupby('productionGroup').agg('sum')
@@ -108,7 +97,8 @@ class Page4:
             )
         )
 
-        fig.update_layout(title=f'Production, {self._area} [%, TWh]')
+        fig.update_layout(
+            title=f'Production in {", ".join(self._area)} [%, TWh]')
         
         st.plotly_chart(fig)
 
@@ -124,31 +114,34 @@ class Page4:
 
         fig = go.Figure()
 
+        # iterate frontend selected groups and areas
         for group in self._group:
-            df = self._db.find(
-            query={'productionGroup': group,
-                   'priceArea': self._area,
-                   'startTime': {
-                       '$gt': self._start,
-                       '$lt': self._stop
-                   }},
-            index=['priceArea','productionGroup', 'startTime']
-            )
+            for area in self._area:
+                # grab data
+                df = self._db.find(
+                query={'productionGroup': group,
+                    'priceArea': area},
+                    # 'startTime': {
+                    #     '$gt': self._start,
+                    #     '$lt': self._stop
+                    # }},
+                index=['priceArea','productionGroup', 'startTime']
+                )
 
-            # get the indices to slice the frame - assume only one year of data.
-            # indices = df.loc[self._area, group].index.month == 1
-            df = df.loc[self._area, group]
+                # slice dataframe
+                df = df.loc[area, group]
 
-            # create trace
-            trace = go.Scatter(
-                x = df.index,
-                y = df['quantityKwh'] / 1e3,
-                name=group
-            )
-            fig.add_trace(trace)
+                # create trace
+                trace = go.Scatter(
+                    x = df.index,
+                    y = df['quantityKwh'] / 1e3,
+                    name=f'{area} - {group}',
+                    opacity=0.5
+                )
+                fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'Production in {self._area}',
+            title=f'Production in {", ".join(self._area)} [MWh]',
             yaxis=dict(
                 title='Production [MWh]'
             )
@@ -175,7 +168,6 @@ class Page4:
         with self._c2:
             st.markdown('## Timeseries')
             self._setup_pills()
-            self._setup_slider()
             self._line_plot()
         
         self._setup_doc()
@@ -185,7 +177,6 @@ class Page4:
         '''Main runtime method'''
         self._get_areas()
         self._get_groups()
-        self._get_timerange()
         self._setup_columns()
         self._setup_contents()
 
