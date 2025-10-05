@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-from modules.fetch import Mongo
+from modules.fetch import Mongo, months
 
 class Page4:
     '''
@@ -18,89 +18,151 @@ class Page4:
 
         # instantiate client
         self._db = Mongo()
-        self._df = self._df.find(
-            db='ind320', table='elhub',
-            index=('startTime'),
-            query={
-                'priceArea':'NO1',
-                'productionGroup':'other'
-                })
-        
-        # extract months
-        self._get_months()
+
+    def _get_areas(self):
+        '''
+        Method to get available priceAreas for
+        frontend radio selector
+        '''
+        self._areas = self._db.distinct(column='priceArea')
+
+    def _get_groups(self):
+        '''
+        Method to get available productionGroups for
+        frontend pills selector
+        '''
+        self._groups = self._db.distinct(column='productionGroup')
     
-    def _get_months(self):
+    def _get_timerange(self):
         '''
-        This method extracts and sorts the available
-        months in the dataset and creates the property
-        self._months. Method is run once in the constructor.
+        Method to get available time range for
+        frontend slider selector
         '''
-        months = self._df.index.to_period("M")
-        self._months = months.sort_values().unique()
+        self._timerange = self._db.distinct(column='startTime')
+
+    def _setup_columns(self):
+        '''
+        Method to split frontend and set size relation
+        '''
+        self._c1, self._c2 = st.columns((1,2))
+
+    def _setup_radio(self):
+        '''
+        Method to get radio button selection from
+        frontend
+        '''
+        self._area = st.radio('Areas', self._areas,
+                              horizontal=True)
+    
+    def _setup_pills(self):
+        '''
+        Method to get pill button selections from
+        frontend
+        '''
+        self._group = st.pills(
+            'productionGroups', self._groups,
+            selection_mode='multi',
+            default=self._groups[0])
+
+    def _setup_slider(self):
+        self._start, self._stop = st.select_slider(
+            "Select time range",
+            options=self._timerange,
+            value=(self._timerange[0], self._timerange[-1])
+            )
+
+    def _pie_chart(self):
+        '''
+        Method to get data from database and
+        render pie chart to frontend.
+        '''
+        df = self._db.find(
+            query={
+                'priceArea': self._area,
+                },
+            index='startTime'
+        )
+        df = df.groupby('productionGroup').agg('sum')
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Pie(
+            labels=df.index,
+            values=df['quantityKwh'] / 1e9 # TWh
+            )
+        )
+
+        fig.update_layout(margin=dict(l=20, r=20, b=20),
+                        title=f'Production, {self._area} [%, TWh]')
         
-        
-    def plot(self):
+        st.plotly_chart(fig)
+
+    def _line_plot(self):
         '''
-        Method to iterate all frontend selected columns
+        Method to iterate all frontend selected pills
         and adds their contents to a plotly graph object.
         Method renders the figure to frontend.
         '''
-        if not isinstance(self._column, list):
-            self._column = list(self._column)
+
+        if not isinstance(self._group, list):
+            self._group = list(self._group)     
 
         fig = go.Figure()
-        for col in self._column:
-            fig.add_trace(
-                go.Scatter(
-                    x=self._df.index,
-                    y=self._df[col],
-                    name=col, yaxis="y1"))
-            
-            fig.update_layout(
-                title=f'Timeseries of Weather data',
-                yaxis=dict(
-                    title=f'Measured Unit Value'
-                )
+
+        for group in self._group:
+            df = self._db.find(
+            query={'productionGroup': group,
+                   'priceArea': self._area,
+                   'startTime': {
+                       '$gt': self._start,
+                       '$lt': self._stop
+                   }},
+            index=['priceArea','productionGroup', 'startTime']
             )
+
+            # get the indices to slice the frame - assume only one year of data.
+            # indices = df.loc[self._area, group].index.month == 1
+            df = df.loc[self._area, group]
+
+            # create trace
+            trace = go.Scatter(
+                x = df.index,
+                y = df['quantityKwh'],
+                name=group
+            )
+            fig.add_trace(trace)
+        
+        # render to frontend
         st.plotly_chart(fig)
 
-    def slice_data(self):
-        '''
-        Method to get slicer information from the
-        self._slice property and slice the self._df property
-        accordingly.
-        '''
-        start, stop = self._slice
-        
-        # slice the dataframe
-        self._df = self._df[
-            (self._df.index.to_period("M")>= start) &
-            (self._df.index.to_period("M") <= stop)
-            ]
 
     # --- PAGE CONTENTS ---
-    def setup_contents(self):
+    def _setup_contents(self):
         '''
         Method to get user inputs from the frontend.
-        Column selector is rendered and stored in the 
-        self._column propery.
         Slicer is rendered and input stored in the
         self._slice property.
         Relies heavily on contents of self._df.
         '''
-        self._column = st.multiselect('Columns', self._df.columns)
-        self._slice = st.select_slider(
-            "Select time range",
-            options=self._months,
-            value=(self._months[0], self._months[-1])
-        )
-        
+        with self._c1:
+            self._setup_radio()
+            self._pie_chart()
+            
+
+        with self._c2:
+            self._setup_pills()
+            self._setup_slider()
+            self._line_plot()
+
         
     def run(self):
         '''Main runtime method'''
-        self.setup_contents()
-        self.slice_data()
-        self.plot()
+        self._get_areas()
+        self._get_groups()
+        self._get_timerange()
+        self._setup_columns()
+        self._setup_contents()
+
 
 if __name__ == '__main__':
     main = Page4()
