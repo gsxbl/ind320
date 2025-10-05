@@ -19,28 +19,40 @@ def agg_first_month(df:pd.DataFrame):
     df = df.groupby(df.index.month).agg(list)
     return df
 
+### EXTRACT MONTHS HELPER ###
+@st.cache_data
+def months(timestamp):
+    return pd.Series(timestamp).dt.to_period('M').unique()
+
 
 ### MONGO DB ###
 class Mongo:
     def __init__(self):
-        self._setupMongoClient()
+        self._client = self._setupMongoClient()
     
     @st.cache_resource
-    def _setupMongoClient(self):
-        self._client = pymongo.MongoClient(st.secrets["mongo"]["uri"])
+    def _setupMongoClient(_self):
+        return pymongo.MongoClient(st.secrets["mongo"]["uri"])
 
     @st.cache_data(ttl=600)
-    def find(self, **kwargs): 
-        db = self._client[kwargs.get('db', 'ind320')]
+    def find(_self, **kwargs): 
+        db = _self._client[kwargs.get('db', 'ind320')]
         collection = db[kwargs.get('table', 'elhub')]
 
         query = kwargs.get('query', {})
         df = pd.DataFrame(list(collection.find(query)))
-        df.drop(columns=['_id'], inplace=True)
+        if '_id' in df.columns:
+            df.drop(columns=['_id'], inplace=True)
 
         # if a multiindex is needed
         set_index = kwargs.get('index', None)
         if set_index:
             df = df.set_index(set_index)
-
         return df
+    
+    @st.cache_data
+    def distinct(_self, **kwargs):
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+        column = kwargs.get('column', 'priceArea')
+        return collection.distinct(column)
