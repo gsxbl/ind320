@@ -41,7 +41,7 @@ class Page4:
         '''
         self._c1, self._c2 = st.columns((1,2))
 
-    def _setup_radio(self):
+    def _setup_pie_slicer(self):
         '''
         Method to get radio button selection from
         frontend
@@ -52,7 +52,7 @@ class Page4:
             default=self._areas[0],
             )
         
-    def _setup_pills(self):
+    def _setup_line_slicer(self):
         '''
         Method to get pill button selections from
         frontend
@@ -78,29 +78,31 @@ class Page4:
         render pie chart to frontend.
         '''
     
-
-        df = self._db.find(
-            query={
-                'priceArea': {
-                    '$in': self._area,
-                }},
-            index='startTime'
-        )
-        df = df.groupby('productionGroup').agg('sum')
-
-        fig = go.Figure()
-
-        fig.add_trace(go.Pie(
-            labels=df.index,
-            values=df['quantityKwh'] / 1e9, # TWh
-            rotation=180,
+        try:
+            df = self._db.find(
+                query={
+                    'priceArea': {
+                        '$in': self._area,
+                    }},
+                index='startTime'
             )
-        )
+            df = df.groupby('productionGroup').agg('sum')
 
-        fig.update_layout(
-            title=f'Production in {", ".join(self._area)} [%, TWh]')
-        
-        st.plotly_chart(fig)
+            fig = go.Figure()
+
+            fig.add_trace(go.Pie(
+                labels=df.index,
+                values=df['quantityKwh'] / 1e9, # TWh
+                rotation=180,
+                )
+            )
+
+            fig.update_layout(
+                title=f'Production in {", ".join(self._area)} [%, TWh]')
+            
+            st.plotly_chart(fig)
+        except Exception as e:
+            st.markdown('No areas selected')
 
     def _line_plot(self):
         '''
@@ -161,13 +163,13 @@ class Page4:
         # left column
         with self._c1:
             st.markdown('## Pie chart')
-            self._setup_radio()
+            self._setup_pie_slicer()
             self._pie_chart()
         
         # right column
         with self._c2:
             st.markdown('## Timeseries')
-            self._setup_pills()
+            self._setup_line_slicer()
             self._line_plot()
         
         self._setup_doc()
