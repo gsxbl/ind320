@@ -1,5 +1,4 @@
 import streamlit as st
-import random
 
 class Main:
     def __init__(self):
