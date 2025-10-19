@@ -21,7 +21,7 @@ class Page4:
         # instantiate client
         self._db = Mongo()
         
-        # cache full dataset once
+        # cache the full dataset
         self._df_full = self._db.get_full_data()
 
     def _get_areas(self):
@@ -51,7 +51,7 @@ class Page4:
         '''
         self._c1, self._c2 = st.columns((1,2))
 
-    def _setup_radio(self):
+    def _setup_area_selector(self):
         '''
         Method to get radio button selection from
         frontend
@@ -62,7 +62,7 @@ class Page4:
             default=self._areas[0],
             )
         
-    def _setup_pills(self):
+    def _setup_group_selector(self):
         '''
         Method to get pill button selections from
         frontend
@@ -77,10 +77,10 @@ class Page4:
         '''
         Method to get month selection from frontend
         '''
-        self._month = st.selectbox(
-            'Select Month',
+        self._month = st.radio('',
             self._months,
-            index=0
+            index=0,
+            horizontal=True
         )
 
     def _setup_doc(self):
@@ -171,26 +171,21 @@ class Page4:
         in the right column.
         '''
         # Month selector at top (above charts)
-        st.markdown('## Month Selector')
         self._setup_month_selector()
-        
         self._setup_columns()
         
-        # left column
+        # left column/container
         with self._c1:
-            st.markdown('## Pie chart')
-            self._setup_radio()
+            self._setup_area_selector()
             self._pie_chart()
         
-        # right column
+        # right column/container
         with self._c2:
-            st.markdown('## Timeseries')
-            self._setup_pills()
+            self._setup_group_selector()
             self._line_plot()
         
         self._setup_doc()
 
-        
     def run(self):
         '''Main runtime method'''
         self._get_areas()
