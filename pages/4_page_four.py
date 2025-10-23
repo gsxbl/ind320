@@ -20,6 +20,9 @@ class Page4:
 
         # instantiate client
         self._db = Mongo()
+        
+        # cache the full dataset
+        self._df_full = self._db.get_full_data()
 
     def _get_areas(self):
         '''
@@ -34,6 +37,13 @@ class Page4:
         frontend pills selector
         '''
         self._groups = self._db.distinct(column='productionGroup')
+
+    def _get_months(self):
+        '''
+        Method to get available months from the cached data
+        for frontend month selector
+        '''
+        self._months = sorted(self._df_full.index.to_period('M').unique().astype(str))
 
     def _setup_columns(self):
         '''
@@ -63,6 +73,16 @@ class Page4:
             default=self._groups[0],
             )
 
+    def _setup_month_selector(self):
+        '''
+        Method to get month selection from frontend
+        '''
+        self._month = st.radio('',
+            self._months,
+            index=0,
+            horizontal=True
+        )
+
     def _setup_doc(self):
         with st.expander('Data source:'):
             st.markdown(
@@ -74,7 +94,7 @@ class Page4:
 
     def _pie_chart(self):
         '''
-        Method to get data from database and
+        Method to filter cached data from database and
         render pie chart to frontend.
         '''
     
@@ -108,7 +128,7 @@ class Page4:
         '''
         Method to iterate all frontend selected pills
         and adds their contents to a plotly graph object.
-        Method renders the figure to frontend.
+        Method renders the figure to frontend using cached data.
         '''
 
         if not isinstance(self._group, list):
@@ -119,19 +139,12 @@ class Page4:
         # iterate frontend selected groups and areas
         for group in self._group:
             for area in self._area:
-                # grab data
-                df = self._db.find(
-                query={'productionGroup': group,
-                    'priceArea': area},
-                    # 'startTime': {
-                    #     '$gt': self._start,
-                    #     '$lt': self._stop
-                    # }},
-                index=['priceArea','productionGroup', 'startTime']
-                )
-
-                # slice dataframe
-                df = df.loc[area, group]
+                # Filter from cached full dataframe by area, group, and month
+                df = self._df_full[
+                    (self._df_full['productionGroup'] == group) &
+                    (self._df_full['priceArea'] == area)
+                ].copy()
+                df = df[df.index.to_period('M').astype(str) == self._month]
 
                 # create trace
                 trace = go.Scatter(
@@ -143,7 +156,7 @@ class Page4:
                 fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'Production in {", ".join(self._area)} [MWh]',
+            title=f'Production in {", ".join(self._area)} [{self._month}] [MWh]',
             yaxis=dict(
                 title='Production [MWh]'
             )
@@ -160,13 +173,17 @@ class Page4:
         Selection in left column slices the data
         in the right column.
         '''
-        # left column
+        # Month selector at top (above charts)
+        self._setup_month_selector()
+        self._setup_columns()
+        
+        # left column/container
         with self._c1:
             st.markdown('## Pie chart')
             self._setup_pie_slicer()
             self._pie_chart()
         
-        # right column
+        # right column/container
         with self._c2:
             st.markdown('## Timeseries')
             self._setup_line_slicer()
@@ -174,12 +191,11 @@ class Page4:
         
         self._setup_doc()
 
-        
     def run(self):
         '''Main runtime method'''
         self._get_areas()
         self._get_groups()
-        self._setup_columns()
+        self._get_months()
         self._setup_contents()
 
 
