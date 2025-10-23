@@ -142,7 +142,7 @@ class Page4:
                     (self._df_full['priceArea'] == area)
                 ].copy()
                 df = df[df.index.to_period('M').astype(str) == self._month]
-
+                df.sort_index(inplace=True)
                 # create trace
                 trace = go.Scatter(
                     x = df.index,
