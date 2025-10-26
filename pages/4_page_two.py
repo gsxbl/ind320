@@ -1,5 +1,6 @@
 import streamlit as st
-from modules.fetch import csv_data, agg_first_month
+from modules.api import OpenMeteo, GeoPos
+from modules.fetch import agg_month
 
 class Page2:
     '''
@@ -12,18 +13,23 @@ class Page2:
     def __init__(self):
         # general page setup
         st.set_page_config(layout='wide')
-        st.header('Weather (dummy)Data ')
+        st.header('Weather Data')
 
         # instantiate and cache data
-        self._df = csv_data('data/open-meteo-subset.csv',
-                            index_col=0, parse_dates=['time'])
+        self._api = OpenMeteo()
+        self._loc = GeoPos()
+
 
     # --- PAGE CONTENTS ---
     def setup_contents(self):
-        # aggreagte the first month
-        df = agg_first_month(self._df)
+        # get weather data
+        self._df = self._api.get_weather_data(
+            **self._loc('Oslo')
+        )
+        # aggregate data by month
+        df = agg_month(self._df)
 
-        # # set configuration for linecharts within Dataframe
+        # set configuration for linecharts within Dataframe
         for col in df.columns:
             col_cfg = st.column_config.LineChartColumn(col)
             
