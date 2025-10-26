@@ -1,7 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-from modules.fetch import csv_data
+from modules.api import GeoPos, OpenMeteo
+from modules.session import SessionState
 
 class Page3:
     '''
@@ -12,18 +13,29 @@ class Page3:
     making them accessible to all methods.
     '''
     def __init__(self):
+        # setup session state
+        SessionState()
+
         # general page setup
         st.set_page_config(layout='wide')
-        st.header('Dummypage 3')
 
         # instantiate and cache data
-        self._df = csv_data(
-            'data/open-meteo-subset.csv', index_col=0,
-            parse_dates=['time'])
+        self._api = OpenMeteo()
+        self._loc = GeoPos()
         
         # extract months
+        self._get_data()
         self._get_months()
-    
+
+    def _get_data(self):
+        '''
+        This method fetches and caches the dataset
+        to the self._df property.
+        '''
+        self._df = self._api.get_weather_data(
+            **self._loc(st.session_state.area),
+        )
+        
     def _get_months(self):
         '''
         This method extracts and sorts the available
@@ -32,7 +44,12 @@ class Page3:
         '''
         months = self._df.index.to_period("M")
         self._months = months.sort_values().unique()
-        
+    
+    def _set_header(self):
+        '''
+        Method to set the page header.
+        '''
+        st.header(f'Weather Data for {self._loc(st.session_state.area, True)}')
         
     def plot(self):
         '''
@@ -83,13 +100,13 @@ class Page3:
         self._slice property.
         Relies heavily on contents of self._df.
         '''
+        self._set_header()
         self._column = st.multiselect('Columns', self._df.columns)
         self._slice = st.select_slider(
             "Select time range",
             options=self._months,
             value=(self._months[0], self._months[-1])
         )
-        
         
     def run(self):
         '''Main runtime method'''
