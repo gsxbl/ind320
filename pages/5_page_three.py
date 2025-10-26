@@ -50,29 +50,38 @@ class Page3:
         Method to set the page header.
         '''
         st.header(f'Weather Data for {self._loc(st.session_state.area, True)}')
-        
+    
+    def _setup_kind_selector(self):
+        '''
+        Method to setup column selector for
+        frontend. selection is persisted to
+        streamlit session state.
+        '''
+        self._column = st.radio(
+            'Columns', self._df.columns, index=self._df.columns.get_loc(st.session_state.kind),
+            horizontal=True
+        )
+        st.session_state.kind = self._column
+    
+
     def plot(self):
         '''
-        Method to iterate all frontend selected columns
-        and adds their contents to a plotly graph object.
-        Method renders the figure to frontend.
+        Method to plot frontend selected column
+        as a plotly graph figure to frontend.
         '''
-        if not isinstance(self._column, list):
-            self._column = list(self._column)
 
         fig = go.Figure()
-        for col in self._column:
-            fig.add_trace(
-                go.Scatter(
-                    x=self._df.index,
-                    y=self._df[col],
-                    name=col, yaxis="y1"))
-            
-            fig.update_layout(
-                title=f'Timeseries of Weather data',
-                yaxis=dict(
-                    title=f'Measured Unit Value'
-                )
+        fig.add_trace(
+            go.Scatter(
+                x=self._df.index,
+                y=self._df[self._column],
+                name=self._column, yaxis="y1"))
+        
+        fig.update_layout(
+            title=f'Timeseries of Weather data',
+            yaxis=dict(
+                title=f'Measured Unit Value'
+            )
             )
         st.plotly_chart(fig)
 
@@ -100,8 +109,7 @@ class Page3:
         self._slice property.
         Relies heavily on contents of self._df.
         '''
-        self._set_header()
-        self._column = st.multiselect('Columns', self._df.columns)
+
         self._slice = st.select_slider(
             "Select time range",
             options=self._months,
@@ -110,6 +118,9 @@ class Page3:
         
     def run(self):
         '''Main runtime method'''
+        
+        self._set_header()
+        self._setup_kind_selector()
         self.setup_contents()
         self.slice_data()
         self.plot()

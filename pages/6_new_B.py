@@ -21,6 +21,12 @@ class NewB:
         self._api = OpenMeteo()
         self._loc = GeoPos()
 
+    def _set_header(self):
+        '''
+        Method to set the page header.
+        '''
+        st.header(f'Weather Analysis for {self._loc(st.session_state.area, True)}')
+
     def _get_data(self):
         '''
         Method to get data from API based on
@@ -28,7 +34,20 @@ class NewB:
         '''
         self._df = self._api.get_weather_data(
             **self._loc(st.session_state.area))
-      
+
+    def _setup_selector(self):
+        '''
+        Method to setup column selector for
+        frontend. selection is persisted to
+        streamlit session state.
+        '''
+        self._column = st.radio(
+            '', self._df.columns,
+            index=self._df.columns.get_loc(st.session_state.kind),
+            horizontal=True
+        )
+        st.session_state.kind = self._column  
+    
     def _setup_tabs(self):
         '''
         Method to setup tabs for the page;
@@ -69,7 +88,7 @@ class NewB:
         # use tab one
         with self.t1:
             self._setup_spc_ui()
-            fig, self._outliers = plot_SPC(self._df, 'temperature_2m',
+            fig, self._outliers = plot_SPC(self._df, st.session_state.kind,
                                             cutoff_freq=self._cf,
                                             proportioncut=self._pcut,
                                             k=self._k)
@@ -79,14 +98,16 @@ class NewB:
         # use tab two
         with self.t2:
             self._setup_lof_ui()
-            fig, self._anomalies = plot_LOF(self._df, 'temperature_2m',
+            fig, self._anomalies = plot_LOF(self._df, st.session_state.kind,
                                             contamination=self.cont,
                                             n_neighbors=self.n_neighbors)
             # render plotly figure
             st.plotly_chart(fig)
 
     def run(self):
+        self._set_header()
         self._get_data()
+        self._setup_selector()
         self._setup_tabs()
         self.setup_contents()
 
