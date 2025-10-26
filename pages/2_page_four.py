@@ -58,7 +58,7 @@ class Page4:
         '''
         self._area = st.pills(
             '', self._areas,
-            selection_mode='multi',
+            selection_mode='single',
             default=self._areas[0],
             )
         
@@ -99,11 +99,11 @@ class Page4:
         '''
         # Check if any areas are selected
         if not self._area:
-            st.markdown('No areas selected')
+            st.markdown('No area selected')
             return
         
         # Filter from cached full dataframe by area and month
-        df = self._df_full[self._df_full['priceArea'].isin(self._area)]
+        df = self._df_full[self._df_full['priceArea'] == self._area]
         df = df[df.index.to_period('M').astype(str) == self._month]
         df = df.groupby('productionGroup').agg('sum')
 
@@ -135,22 +135,21 @@ class Page4:
 
         # iterate frontend selected groups and areas
         for group in self._group:
-            for area in self._area:
-                # Filter from cached full dataframe by area, group, and month
-                df = self._df_full[
-                    (self._df_full['productionGroup'] == group) &
-                    (self._df_full['priceArea'] == area)
-                ].copy()
-                df = df[df.index.to_period('M').astype(str) == self._month]
-                df.sort_index(inplace=True)
-                # create trace
-                trace = go.Scatter(
-                    x = df.index,
-                    y = df['quantityKwh'] / 1e3,
-                    name=f'{area} - {group}',
-                    opacity=0.5
-                )
-                fig.add_trace(trace)
+            # Filter from cached full dataframe by area, group, and month
+            df = self._df_full[
+                (self._df_full['productionGroup'] == group) &
+                (self._df_full['priceArea'] == self._area)
+            ].copy()
+            df = df[df.index.to_period('M').astype(str) == self._month]
+            df.sort_index(inplace=True)
+            # create trace
+            trace = go.Scatter(
+                x = df.index,
+                y = df['quantityKwh'] / 1e3,
+                name=f'{self._area} - {group}',
+                opacity=0.5
+            )
+            fig.add_trace(trace)
 
         fig.update_layout(
             title=f'Production in {", ".join(self._area)} [{self._month}] [MWh]',
