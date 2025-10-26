@@ -94,6 +94,7 @@ class NewB:
                                             k=self._k)
             # render plotly figure
             st.plotly_chart(fig)
+            st.dataframe(self._outliers.describe().T, width=200)
         
         # use tab two
         with self.t2:
@@ -103,6 +104,7 @@ class NewB:
                                             n_neighbors=self.n_neighbors)
             # render plotly figure
             st.plotly_chart(fig)
+            st.dataframe(self._anomalies.describe().T, width=200)
 
     def run(self):
         self._set_header()
