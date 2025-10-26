@@ -3,25 +3,6 @@ import pymongo
 import streamlit as st
 import pandas as pd
 
-### CSV / LOCAL DATA ###
-@st.cache_data
-def csv_data(path:str, **kwargs):
-    '''This function should cache the data in streamlit'''
-    return pd.read_csv(path, **kwargs)
-
-
-### LINE CHART COLUMN HELPER ###
-def agg_month(df:pd.DataFrame, month:str):
-    df = df.loc[month]
-    df = df.groupby(df.index.month).agg(list)
-    df.index.name = 'Month'
-    return df
-
-### EXTRACT MONTHS HELPER ###
-def months(timestamp):
-    return pd.Series(timestamp).dt.to_period('M').unique()
-
-
 ### MONGO DB ###
 class Mongo:
     def __init__(self):
