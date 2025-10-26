@@ -3,5 +3,3 @@ pandas
 plotly
 pymongo
 openmeteo-requests
-requests-cache
-retry-requests
