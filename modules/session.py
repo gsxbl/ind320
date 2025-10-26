@@ -15,3 +15,5 @@ class SessionState:
             st.session_state.month = '2021-01'
         if 'kind' not in st.session_state:
             st.session_state.kind = 'temperature_2m'
+        if 'group' not in st.session_state:
+            st.session_state.group = []
