@@ -15,14 +15,30 @@ class GeoPos:
             "Kristiansand": {"latitude": 58.15, "longitude": 8.00},
         }
 
-    def __call__(self, arg, to_loc=False):
-        convert = {'NO1':'Oslo', 'NO2':'Kristiansand', 
+        self._conv = {'NO1':'Oslo', 'NO2':'Kristiansand', 
                    'NO3':'Trondheim', 'NO4':'Tromsø', 'NO5':'Bergen'}
-        if to_loc:
-            return convert.get(arg, None)
-        arg = convert.get(arg, None)
-        return self._locations.get(arg, None)
+        
+        self._conv2 = {v:k for k,v in self._conv.items()}
 
+    def __call__(self, arg, to_loc=False):
+        if to_loc:
+            return self._conv.get(arg, None)
+        arg = self._conv.get(arg, None)
+        return self._locations.get(arg, None)
+    
+    @property
+    def areas(self):
+        """Return list of available area codes."""
+        return list(self._conv.keys())
+    
+    @property
+    def cities(self):
+        """Return list of available city names."""
+        return list(self._locations.keys())
+
+    def get_area(self, city):
+        """Get area code for a given city name."""
+        return self._conv2.get(city, None)
 
 class OpenMeteo:
     """Client for Open-Meteo weather API with Streamlit caching."""
