@@ -11,10 +11,8 @@ def csv_data(path:str, **kwargs):
 
 
 ### LINE CHART COLUMN HELPER ###
-def agg_month(df:pd.DataFrame, **kwargs):
-    minmonth = kwargs.get('month', df.index.month.min())
-    minyear = kwargs.get('year', df.index.year.min())
-    df = df.loc[f"{minyear}-{minmonth:02d}"]
+def agg_month(df:pd.DataFrame, month:str):
+    df = df.loc[month]
     df = df.groupby(df.index.month).agg(list)
     df.index.name = 'Month'
     return df
