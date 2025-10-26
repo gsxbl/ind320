@@ -21,7 +21,8 @@ def highpass_filter(data, cutoff_freq):
     # Perform inverse DCT
     return idct(dct_res, type=1, norm='forward')
 
-def plot_robust(data, key:str, **kwargs):
+@st.cache_data
+def plot_SPC(data, key:str, **kwargs):
     # filtered signals
     highpass = highpass_filter(data[key], cutoff_freq=kwargs.get('cutoff_freq', 30))
     lowpass = data[key] - highpass
@@ -39,40 +40,56 @@ def plot_robust(data, key:str, **kwargs):
 
     # plot the original signal
     fig.add_trace(go.Scatter(
-        x=data['date'], y=data[key],
+        x=data.index, y=data[key],
         mode='lines', name='Original Signal'))
 
     # plot the outliers with yellow color for outliers
     fig.add_trace(go.Scatter(
-        x=data['date'], y=outliers,
+        x=data.index, y=outliers,
         mode='lines', name='Outliers', line=dict(color='yellow')))
 
     # add confidence intervals with dashed lines
     fig.add_trace(go.Scatter(
-        x=data['date'], y=lowpass - m + n*s,
+        x=data.index, y=lowpass - m + n*s,
         mode='lines', name='Lower Bound',
         line=boundary))
 
     fig.add_trace(go.Scatter(
-        x=data['date'], y=lowpass - m - n*s,
+        x=data.index, y=lowpass - m - n*s,
         mode='lines', name='Upper Bound',
         line=boundary, fill='tonexty', fillcolor='rgba(255,0,0,0.05)'))
 
     # plot seasonal trend
-    fig.add_trace(go.Scatter(x=data['date'], y=lowpass,
+    fig.add_trace(go.Scatter(x=data.index, y=lowpass,
                             mode='lines', name='Seasonal Trend'))
 
     fig.update_layout(title=f'{key} over Time with outliers',
                     xaxis_title='Date',
                     yaxis_title=key)
 
-    return fig, pd.Series(outliers, index=data['date']).dropna()
+    return fig, pd.Series(outliers, index=data.index).dropna()
 
 # plot precipitation as function of time with Local Outlier Factor
+@st.cache_data
 def plot_LOF(data, key:str, **kwargs):
+    '''Plot LOF anomalies.
+    kwargs:
+    contamination: float, optional
+        The amount of contamination of the data set, i.e. the proportion of
+        outliers in the data set. Used when fitting to define the threshold
+        on the decision function. Default is 0.01.
+    n_neighbors: int, optional
+        Number of neighbors to use by default for k-neighbors queries. Default is 20.
+    Returns:
+        plotly.graph_objects.Figure, pd.Series
+        A plotly figure showing the data with detected anomalies highlighted,
+        and
+        A series containing the detected outliers.
+
+    '''
     # apply Local Outlier Factor
     lof = LocalOutlierFactor(
-        n_neighbors=40,
+        n_neighbors=kwargs.get('n_neighbors', 20),
         contamination=kwargs.get('contamination', 0.01))
     outlier_labels = lof.fit_predict(data[[key]].copy())
     outliers = np.where(outlier_labels == -1, data[key], np.nan)
@@ -82,19 +99,19 @@ def plot_LOF(data, key:str, **kwargs):
 
     # plot the original signal
     fig.add_trace(go.Scatter(
-        x=data['date'], y=data[key],
+        x=data.index, y=data[key],
         mode='lines', name=key))
 
     # plot the outliers with red color for outliers
     fig.add_trace(go.Scatter(
-        x=data['date'], y=outliers,
+        x=data.index, y=outliers,
         mode='markers', name='Anomalies', marker=dict(color='red', size=6)))
 
     fig.update_layout(title=f'{key} over Time with LOF anomalies',
                       xaxis_title='Date',
                       yaxis_title=key)
 
-    return fig, pd.Series(outliers, index=data['date']).dropna()
+    return fig, pd.Series(outliers, index=data.index).dropna()
 
 # apply STL decomposition
 @st.cache_data
