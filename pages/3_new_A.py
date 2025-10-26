@@ -1,7 +1,6 @@
 import streamlit as st
 from modules.session import SessionState
 from modules.db import Mongo
-from modules.api import OpenMeteo, GeoPos
 from modules.analysis import plot_STFT, plot_STL
 
 class NewA:
@@ -19,8 +18,6 @@ class NewA:
 
         # instantiate and cache data
         self._db = Mongo()
-        self._api = OpenMeteo()
-        self._loc = GeoPos()
         
         # fetch data from db
         self._df = self._db.get_full_data()
@@ -54,8 +51,7 @@ class NewA:
         
     def _setup_tabs(self):
         '''
-        Method to setup tabs for the page
-        One tab for STL analysis,
+        Method to setup tabs for the page. One tab for STL analysis,
         another for Spectrogram
         '''
         self.t1, self.t2 = st.tabs(['STL Analysis', 'Spectrogram'])
@@ -78,6 +74,7 @@ class NewA:
             st.plotly_chart(fig)
 
     def run(self):
+        st.header(f'Production analysis for {st.session_state.area}')
         self._get_groups()
         self._setup_group_selector()
         self._setup_tabs()
