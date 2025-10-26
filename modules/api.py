@@ -12,8 +12,15 @@ class GeoPos:
             "Bergen": {"latitude": 60.39, "longitude": 5.32},
             "Trondheim": {"latitude": 63.43, "longitude": 10.40},
             "Tromsø": {"latitude": 69.65, "longitude": 18.96},
+            "Kristiansand": {"latitude": 58.15, "longitude": 8.00},
         }
-    def __call__(self, arg):
+
+    def __call__(self, arg, to_loc=False):
+        convert = {'NO1':'Oslo', 'NO2':'Kristiansand', 
+                   'NO3':'Trondheim', 'NO4':'Tromsø', 'NO5':'Bergen'}
+        if to_loc:
+            return convert.get(arg, None)
+        arg = convert.get(arg, None)
         return self._locations.get(arg, None)
 
 
