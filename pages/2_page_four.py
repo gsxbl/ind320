@@ -59,10 +59,10 @@ class Page4:
         Method to get radio button selection from
         frontend. Persist to streamlit session state.
         '''
-        self._area = st.pills(
+        self._area = st.radio(
             '', self._areas,
-            selection_mode='single',
-            default=st.session_state.area,
+            index=self._areas.index(st.session_state.area),
+            horizontal=True
             )
         
         st.session_state.area = self._area
@@ -84,7 +84,7 @@ class Page4:
         '''
         self._month = st.radio('',
             self._months,
-            index=0,
+            index=self._months.index(st.session_state.month),
             horizontal=True
         )
         st.session_state.month = self._month
@@ -123,7 +123,7 @@ class Page4:
         )
 
         fig.update_layout(
-            title=f'Production in {", ".join(self._area)} [{self._month}] [%, TWh]')
+            title=f'Production in {self._area} [{self._month}] [%, TWh]')
         
         st.plotly_chart(fig)
 
@@ -158,7 +158,7 @@ class Page4:
             fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'Production in {", ".join(self._area)} [{self._month}] [MWh]',
+            title=f'Production in {self._area} [{self._month}] [MWh]',
             yaxis=dict(
                 title='Production [MWh]'
             )

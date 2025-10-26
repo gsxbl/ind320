@@ -16,6 +16,9 @@ class NewA:
         st.set_page_config(layout='wide')
         SessionState()
 
+        st.markdown('''
+                - Add necessary UI elements and plots to both
+            ''')
         # instantiate and cache data
         self._db = Mongo()
         
@@ -43,12 +46,12 @@ class NewA:
         Method to get pill button selections from
         frontend
         '''
-        self._group = st.pills(
+        self._group = st.radio(
             '', self._groups,
-            selection_mode='single',
-            default=self._groups[0],
-            )
-        
+            index=0,
+            horizontal=True
+        )
+
     def _setup_tabs(self):
         '''
         Method to setup tabs for the page. One tab for STL analysis,
@@ -56,21 +59,44 @@ class NewA:
         '''
         self.t1, self.t2 = st.tabs(['STL Analysis', 'Spectrogram'])
 
+    def _setup_stl_ui(self):
+        '''
+        Method to setup STL tab UI elements
+        '''
+        with st.expander('STL Settings'):
+            self._period = st.number_input(
+                'Period', min_value=1, value=24*28, step=1
+            )
+            self._robust = st.checkbox('Robust', value=True)
+
+    def _setup_stft_ui(self):
+        '''
+        Method to setup STFT tab UI elements
+        '''
+        with st.expander('STFT Settings'):
+            self._nperseg = st.number_input(
+                'Number of Samples per Segment', min_value=1, value=256, step=1
+            )
+            self._noverlap = st.number_input(
+                'Number of Overlapping Samples', min_value=0, value=128, step=1
+            )
+    
     # --- PAGE CONTENTS ---
     def setup_contents(self):
-        st.markdown('''
-                - Add necessary UI elements and plots to both.'
-            ''')
+        
 
         # 2DO : rewrite so that STL dosn't load everytime when viewing STFT tab
         with self.t1:
+            self._setup_stl_ui()
             fig = plot_STL(self._df, st.session_state.area, self._group,
-                           period=24*15, robust=True)
+                            period=self._period, robust=self._robust)
             st.plotly_chart(fig)
 
+
         with self.t2:
+            self._setup_stft_ui()
             fig = plot_STFT(self._df, st.session_state.area, self._group,
-                             nperseg=256, noverlap=128)
+                             nperseg=self._nperseg, noverlap=self._noverlap)
             st.plotly_chart(fig)
 
     def run(self):
