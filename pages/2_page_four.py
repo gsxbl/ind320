@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 
 from modules.fetch import Mongo
+from modules.session import SessionState
 
 class Page4:
     '''
@@ -12,12 +13,14 @@ class Page4:
     making them accessible to all methods.
     '''
     def __init__(self):
+        # setup session state
+        SessionState()
+
         # general page setup
         st.set_page_config(layout='wide')
         st.markdown(
             '# Elhub data'
         )
-
         # instantiate client
         self._db = Mongo()
         
@@ -54,13 +57,15 @@ class Page4:
     def _setup_area_selector(self):
         '''
         Method to get radio button selection from
-        frontend
+        frontend. Persist to streamlit session state.
         '''
         self._area = st.pills(
             '', self._areas,
             selection_mode='single',
-            default=self._areas[0],
+            default=st.session_state.area,
             )
+        
+        st.session_state.area = self._area
         
     def _setup_group_selector(self):
         '''
@@ -82,6 +87,7 @@ class Page4:
             index=0,
             horizontal=True
         )
+        st.session_state.month = self._month
 
     def _setup_doc(self):
         with st.expander('Data source:'):
