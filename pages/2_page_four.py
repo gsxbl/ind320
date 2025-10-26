@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-from modules.fetch import Mongo
+from modules.db import Mongo
 from modules.session import SessionState
 
 class Page4:
