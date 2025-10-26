@@ -15,18 +15,20 @@ app/
 ├── .streamlit/
 │   └── config.toml
 │
-├── data/
-│   └── open-meteo-subset.csv
-│
 ├── modules/
 │   ├── __init__.py
-│   └── fetch.py
+│   ├── analysis.py
+│   ├── api.py
+│   ├── session.py
+│   └── db.py
 │
 ├── pages/
-│   ├── 2_page_two.py
-│   ├── 3_page_three.py
-│   ├── 4_page_three.py
-│   └── 5_page_four.py
+│   ├── 2_page_four.py
+│   ├── 3_new_A.py
+│   ├── 4_page_two.py
+│   ├── 5_page_three.py
+│   ├── 6_new_B.py
+│   └── 7_page_five.py
 │
 ├── notebooks/
 │
@@ -37,16 +39,13 @@ app/
 ```
 
 ### Modules/
-Contains per v2.0, some custom functions for streamlit-cached reading of csv-files and a custom `Mongo` class to connect to MongoDB.
+Contains per v3.0, `analysis.py` with tailored plot functions, `session.py` for persisting variables in Streamlit and keep entry point arbitrary and `db.py` with a custom `MongoDB` handler.
 
 ### Notebooks/
 All notebooks used to document development will be published here.
 
 ### Pages/
-Contains per v2.0, five different pages as per task description
-
-### Data
-This folder contains the supplied data for use in compulsory assignment 1, which corresponds to v1.0.
+Contains per v3.0, 6 different pages as per task description. Naming convention used to reflect task description.
 
 ### Main.py
 This file contains the main entry point for the application, and renders the front page.
