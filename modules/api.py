@@ -72,8 +72,8 @@ class OpenMeteo:
         # Build date range
         data = {
             "date": pd.date_range(
-                start=pd.to_datetime(response.Time(), unit="s", utc=True),
-                end=pd.to_datetime(response.TimeEnd(), unit="s", utc=True),
+                start=pd.to_datetime(response.Time(), unit="s"),
+                end=pd.to_datetime(response.TimeEnd(), unit="s"),
                 freq=pd.Timedelta(seconds=response.Interval()),
                 inclusive="left"
             )
