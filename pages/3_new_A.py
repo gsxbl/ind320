@@ -16,12 +16,9 @@ class NewA:
         st.set_page_config(layout='wide')
         SessionState()
 
-        st.markdown('''
-                - Add necessary UI elements and plots to both
-            ''')
         # instantiate and cache data
         self._db = Mongo()
-        
+       
         # fetch data from db
         self._df = self._db.get_full_data()
         self._set_multiindex()
@@ -64,10 +61,29 @@ class NewA:
         Method to setup STL tab UI elements
         '''
         with st.expander('STL Settings'):
-            self._period = st.number_input(
-                'Period', min_value=1, value=24*28, step=1
+            robust = st.checkbox('Robust', value=False)
+            
+            period = st.number_input(
+                'Period, default = 24 * 7 * 4', min_value=1, value=24*28, step=1
             )
-            self._robust = st.checkbox('Robust', value=True)
+            seasonal = st.number_input(
+                'Seasonal, default = 7', min_value=7, value=7, step=2
+            )
+            # compute minimum trend value
+            trend_min = 1.5 * period / (1 - (1.5 / seasonal)) + 1
+            trend_min = int(trend_min) if trend_min % 2 != 0 else int(trend_min) + 1
+            
+            trend = st.number_input(
+                'Trend, default = odd int > 1.5 * period / (1 - (1.5 / seasonal))',
+                min_value=trend_min, value=trend_min, step=2
+            )
+
+        self._stl_kwargs = {
+            'period': period,
+            'robust': robust,
+            'seasonal': seasonal,
+            'trend': trend
+        }
 
     def _setup_stft_ui(self):
         '''
@@ -83,13 +99,12 @@ class NewA:
     
     # --- PAGE CONTENTS ---
     def setup_contents(self):
-        
 
-        # 2DO : rewrite so that STL dosn't load everytime when viewing STFT tab
+        # 2DO : if possible rewrite so that STL dosn't load everytime when viewing STFT tab
         with self.t1:
             self._setup_stl_ui()
             fig = plot_STL(self._df, st.session_state.area, self._group,
-                            period=self._period, robust=self._robust)
+                            **self._stl_kwargs)
             st.plotly_chart(fig)
 
 
