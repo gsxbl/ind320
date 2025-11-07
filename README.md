@@ -1,6 +1,6 @@
 # ind320 Streamlit app
 
-- Version: 2.0
+- Version: 3.0
 - Author: gsxbl
 
 ---
