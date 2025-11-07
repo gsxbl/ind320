@@ -131,18 +131,21 @@ def plot_STL(data, area, group, **kwargs):
         data.loc[area, group]['quantityKwh'], **kwargs)
     result = stl.fit()
 
-    fig = make_subplots(rows=4, cols=1, shared_xaxes=True,
-                        subplot_titles=("Observed", "Trend", "Seasonal", "Residual"))
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                        subplot_titles=("Observed and Trend", "Seasonal and Residual"))
+    
     fig.add_trace(go.Scatter(x=result.observed.index, y=result.observed,
                             mode='lines', name='Observed'), row=1, col=1)
     fig.add_trace(go.Scatter(x=result.trend.index, y=result.trend,
-                            mode='lines', name='Trend'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=result.seasonal.index, y=result.seasonal,
-                            mode='lines', name='Seasonal'), row=3, col=1)
-    fig.add_trace(go.Scatter(x=result.resid.index, y=result.resid,
-                            mode='lines', name='Residual'), row=4, col=1)
+                            mode='lines', name='Trend'), row=1, col=1)
     
-        # make plot taller
+    fig.add_trace(go.Scatter(x=result.seasonal.index, y=result.seasonal,
+                            mode='lines', name='Seasonal'), row=2, col=1)
+    fig.add_trace(go.Scatter(x=result.resid.index, y=result.resid,
+                            mode='lines', name='Residual'), row=2, col=1)
+    
+    # make plot taller
+    fig.update_xaxes(showgrid=True, matches='x')
     fig.update_layout(height=700)
     
     return fig
