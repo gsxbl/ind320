@@ -1,7 +1,10 @@
 import streamlit as st
+from modules.session import SessionState
 
 class Main:
     def __init__(self):
+        # set persistent variables
+        SessionState()       
         
         st.set_page_config(
             page_title='Ind320 - CA1 - gsxbl',

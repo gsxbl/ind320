@@ -1,0 +1,52 @@
+"""Module to handle data fetching functions"""
+import pymongo
+import streamlit as st
+import pandas as pd
+
+### MONGO DB ###
+class Mongo:
+    def __init__(self):
+        self._client = self._setupMongoClient()
+        
+    
+    @st.cache_resource
+    def _setupMongoClient(_self):
+        return pymongo.MongoClient(st.secrets["mongo"]["uri"])
+
+    @st.cache_data(ttl=600)
+    def find(_self, **kwargs): 
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+
+        query = kwargs.get('query', {})
+        df = pd.DataFrame(list(collection.find(query)))
+        if '_id' in df.columns:
+            df.drop(columns=['_id'], inplace=True)
+
+        # if a multiindex is needed
+        set_index = kwargs.get('index', None)
+        if set_index:
+            df = df.set_index(set_index)
+        return df
+    
+    @st.cache_data(ttl=600)
+    def get_full_data(_self, **kwargs):
+        '''Get entire dataset from database, cached once'''
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+        
+        df = pd.DataFrame(list(collection.find({})))
+        if '_id' in df.columns:
+            df.drop(columns=['_id'], inplace=True)
+        
+        # Set index for efficient slicing
+        df = df.set_index('startTime')
+        return df
+    
+    @st.cache_data
+    def distinct(_self, **kwargs):
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+        column = kwargs.get('column', 'priceArea')
+        return collection.distinct(column)
+    
