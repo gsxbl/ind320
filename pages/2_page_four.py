@@ -27,78 +27,30 @@ class Page4:
         # load dataframe from database
         self._load_df()
 
-        
+
     def _load_df(self):
         '''
         Method to load dataframe from MongoDB based on session state month
         '''
-        # query Mongo for data in that month range
-        self._df = self._db.get_data_by_month(
-            index=['priceArea', 'productionGroup', 'startTime'],
-            month=st.session_state.month
-        )
-
-    # def _get_areas(self):
-    #     '''
-    #     Method to get available priceAreas for
-    #     frontend radio selector
-    #     '''
-    #     self._areas = self._db.distinct(column='priceArea')
-
-    # def _get_groups(self):
-    #     '''
-    #     Method to get available productionGroups for
-    #     frontend pills selector
-    #     '''
-    #     self._groups = self._db.distinct(column='productionGroup')
-
-    # def _get_months(self):
-    #     '''
-    #     Method to get available months from the cached data
-    #     for frontend month selector
-    #     '''
-    #     self._months = sorted(self._df.index.to_period('M').unique().astype(str))
+        # split methods to preserve cache efficiency
+        if st.session_state.timescale == 'Monthly':
+            self._df = self._db.get_data(
+                index=['priceArea', 'productionGroup', 'startTime'],
+                timescale='Monthly',
+                month=st.session_state.month
+            )
+        else:
+            self._df = self._db.get_data(
+                index=['priceArea', 'productionGroup', 'startTime'],
+                timescale='Yearly',
+                year=st.session_state.year
+            )
 
     def _setup_columns(self):
         '''
         Method to split frontend and set size relation
         '''
         self._c1, self._c2 = st.columns((1,2))
-
-    # def _setup_area_selector(self):
-    #     '''
-    #     Method to get radio button selection from
-    #     frontend. Persist to streamlit session state.
-    #     '''
-    #     self._area = st.radio(
-    #         '', self._areas,
-    #         index=self._areas.index(st.session_state.area),
-    #         horizontal=True
-    #         )
-        
-    #     st.session_state.area = self._area
-        
-    # def _setup_group_selector(self):
-    #     '''
-    #     Method to get pill button selections from
-    #     frontend
-    #     '''
-    #     self._group = st.pills(
-    #         '', self._groups,
-    #         selection_mode='multi',
-    #         default=self._groups[0],
-    #         )
-
-    # def _setup_month_selector(self):
-    #     '''
-    #     Method to get month selection from frontend
-    #     '''
-    #     self._month = st.radio('',
-    #         self._months,
-    #         index=self._months.index(st.session_state.month),
-    #         horizontal=True
-    #     )
-    #     st.session_state.month = self._month
 
     def _setup_doc(self):
         with st.expander('Data source:'):
@@ -114,11 +66,6 @@ class Page4:
         Method to filter cached data from database and
         render pie chart to frontend.
         '''
-        # Check if any areas are selected
-        # if not self._area:
-        #     st.markdown('No area selected')
-        #     return
-        
         # Filter from cached full dataframe by area and month
         df = self._df.loc[st.session_state.area]
         df = df.groupby('productionGroup').agg('sum')
@@ -131,10 +78,14 @@ class Page4:
             rotation=180,
             )
         )
+        # dynamic title based on timescale
+        if st.session_state.timescale == 'Monthly':
+            fig.update_layout(
+                title=f'Production in {st.session_state.area} [{st.session_state.month}] [%, TWh]')
+        else:
+            fig.update_layout(
+                title=f'Production in {st.session_state.area} [{st.session_state.year}] [%, TWh]')
 
-        fig.update_layout(
-            title=f'Production in {st.session_state.area} [{st.session_state.month}] [%, TWh]')
-        
         st.plotly_chart(fig)
 
     def _line_plot(self):
@@ -143,32 +94,37 @@ class Page4:
         and adds their contents to a plotly graph object.
         Method renders the figure to frontend using cached data.
         '''
-
-        # if not isinstance(self._group, list):
-        #     self._group = list(self._group)     
-
+        # instantiate figure
         fig = go.Figure()
-
         
-        # Filter from cached full dataframe by area, group, and month
-        df = self._df.loc[(st.session_state.area, st.session_state.group)]
-        df = df[df.index.to_period('M').astype(str) == st.session_state.month]
-        df.sort_index(inplace=True)
-        # create trace
-        trace = go.Scatter(
-            x = df.index,
-            y = df['quantityKwh'] / 1e3,
-            name=f'{st.session_state.area} - {st.session_state.group}',
-            opacity=0.5
-        )
-        fig.add_trace(trace)
+        S = st.session_state.timescale[0]
+        scale = st.session_state.month if S == 'M' else st.session_state.year
+        
+        # iterate groups and add traces
+        for group in st.session_state.group:
+
+            # Filter from cached full dataframe by area, group, and month
+            df = self._df.loc[(st.session_state.area, group)]
+            df = df[df.index.to_period(S).astype(str) == scale]
+            df.sort_index(inplace=True)
+
+            # create trace
+            trace = go.Scatter(
+                x = df.index,
+                y = df['quantityKwh'] / 1e3,
+                name=f'{st.session_state.area} - {group}',
+                opacity=0.5
+            )
+            fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'Production in {st.session_state.area} [{st.session_state.month}] [MWh]',
+            title=f'Production in {st.session_state.area} [{scale}] [MWh]',
             yaxis=dict(
                 title='Production [MWh]'
             )
         )
+
+
         # render to frontend
         st.plotly_chart(fig)
 
@@ -182,26 +138,20 @@ class Page4:
         in the right column.
         '''
         # Month selector at top (above charts)
-        # self._setup_month_selector()
         self._setup_columns()
         
         # left column/container
         with self._c1:
-            # self._setup_area_selector()
             self._pie_chart()
         
         # right column/container
         with self._c2:
-            # self._setup_group_selector()
             self._line_plot()
         
         self._setup_doc()
 
     def run(self):
         '''Main runtime method'''
-        # self._get_areas()
-        # self._get_groups()
-        # self._get_months()
         self._setup_contents()
 
 

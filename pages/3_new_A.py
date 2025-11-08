@@ -1,7 +1,9 @@
 import streamlit as st
+from datetime import datetime
 from modules.session import SessionState
 from modules.db import Mongo
 from modules.analysis import plot_STFT, plot_STL
+from modules.header import Header
 
 class NewA:
     '''
@@ -15,39 +17,32 @@ class NewA:
         # general page setup
         st.set_page_config(layout='wide')
         SessionState()
+        Header(group_options='single')
 
-        # instantiate and cache data
+        # instantiate mongo client
         self._db = Mongo()
-       
-        # fetch data from db
-        self._df = self._db.get_full_data()
-        self._set_multiindex()
 
-    def _get_groups(self):
-        '''
-        Method to get available productionGroups for
-        frontend pills selector
-        '''
-        self._groups = self._df.index.get_level_values('productionGroup').unique()
+        # load dataframe from database
+        self._load_df()
 
-    def _set_multiindex(self):
-        '''
-        Method to set multiindex for the dataframe
-        '''
-        self._df = self._df.reset_index().set_index(
-            ['priceArea', 'productionGroup', 'startTime']
-            ).sort_index()
 
-    def _setup_group_selector(self):
+    def _load_df(self):
         '''
-        Method to get pill button selections from
-        frontend
+        Method to load dataframe from MongoDB based on session state month
         '''
-        self._group = st.radio(
-            '', self._groups,
-            index=0,
-            horizontal=True
-        )
+        # split methods to preserve cache efficiency
+        if st.session_state.timescale == 'Monthly':
+            self._df = self._db.get_data(
+                index=['priceArea', 'productionGroup', 'startTime'],
+                timescale='Monthly',
+                month=st.session_state.month
+            )
+        else:
+            self._df = self._db.get_data(
+                index=['priceArea', 'productionGroup', 'startTime'],
+                timescale='Yearly',
+                year=st.session_state.year
+            )
 
     def _setup_tabs(self):
         '''
@@ -58,20 +53,29 @@ class NewA:
 
     def _setup_stl_ui(self):
         '''
-        Method to setup STL tab UI elements
+        Method to setup STL tab UI elements. the period default is dynamic,
+        and defaults to a quarter of the data scale - if data length is one year
+        default is 24 * 7 * 4, if data length is one month default is 24.
         '''
+        if st.session_state.timescale == 'Yearly':
+            default_period = 24 * 7 * 4  # roughly a month
+        else:
+            default_period = 24  # daily
+
+
         with st.expander('STL Settings'):
             robust = st.checkbox('Robust', value=False)
             
             period = st.number_input(
-                'Period, default = 24 * 7 * 4', min_value=1, value=24*28, step=1
+                'Period, default = 24 * 7 * 4', min_value=1, value=default_period, step=1
             )
             seasonal = st.number_input(
                 'Seasonal, default = 7', min_value=7, value=7, step=2
             )
-            # compute minimum trend value
-            trend_min = 1.5 * period / (1 - (1.5 / seasonal)) + 1
-            trend_min = int(trend_min) if trend_min % 2 != 0 else int(trend_min) + 1
+           # compute trend min
+            trend_min = int(1.5 * period / (1 - (1.5 / seasonal)))
+            if trend_min % 2 == 0:
+                trend_min += 1  # make it odd
             
             trend = st.number_input(
                 'Trend, default = odd int > 1.5 * period / (1 - (1.5 / seasonal))',
@@ -91,33 +95,62 @@ class NewA:
         '''
         with st.expander('STFT Settings'):
             self._nperseg = st.number_input(
-                'Number of Samples per Segment', min_value=1, value=256, step=1
+                'Number of Samples per Segment', min_value=1, value=31, step=1
             )
             self._noverlap = st.number_input(
-                'Number of Overlapping Samples', min_value=0, value=128, step=1
+                'Number of Overlapping Samples', min_value=0, value=30, step=1
             )
     
+    def _plot_stl(self):
+        '''
+        Method to plot STL analysis using cached data
+        '''
+        if not st.session_state.group:
+            st.warning('Please select at least one production group to plot STL analysis.')
+            return
+        
+        fig = plot_STL(
+            self._df,
+            st.session_state.area,
+            st.session_state.group[0],
+            **self._stl_kwargs
+        )
+
+        st.plotly_chart(fig)
+
+    def _plot_stft(self):
+        '''
+        Method to plot STFT spectrogram using cached data
+        '''
+        if not st.session_state.group:
+            st.warning('Please select at least one production group to plot STFT spectrogram.')
+            return
+        
+        fig = plot_STFT(
+            self._df,
+            st.session_state.area,
+            st.session_state.group[0],
+            nperseg=self._nperseg,
+            noverlap=self._noverlap
+        )
+        st.plotly_chart(fig)
+
     # --- PAGE CONTENTS ---
     def setup_contents(self):
-
-        # 2DO : if possible rewrite so that STL dosn't load everytime when viewing STFT tab
+        '''
+        Method to setup page contents inside tabs
+        '''
         with self.t1:
             self._setup_stl_ui()
-            fig = plot_STL(self._df, st.session_state.area, self._group,
-                            **self._stl_kwargs)
-            st.plotly_chart(fig)
+            self._plot_stl()
 
 
         with self.t2:
             self._setup_stft_ui()
-            fig = plot_STFT(self._df, st.session_state.area, self._group,
-                             nperseg=self._nperseg, noverlap=self._noverlap)
-            st.plotly_chart(fig)
+            self._plot_stft()
 
     def run(self):
         st.header(f'Production analysis for {st.session_state.area}')
-        self._get_groups()
-        self._setup_group_selector()
         self._setup_tabs()
         self.setup_contents()
 
