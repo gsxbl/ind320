@@ -32,42 +32,45 @@ class Mongo:
         return df
     
     @st.cache_data(ttl=600)
-    def get_data_by_month(_self, **kwargs):
-        '''Get data for a specific month from the database'''
+    def get_data(_self, **kwargs):
+        '''Generic method to get data from database,
+        either by YYYY-MM or YYYY
+        '''
         db = _self._client[kwargs.get('db', 'ind320')]
         collection = db[kwargs.get('table', 'elhub')]
-        month = kwargs.get('month', st.session_state.month)
-        year, month = map(int, month.split('-'))
-        start = datetime(year, month, 1)
-        if month == 12:
-            next_month = datetime(year + 1, 1, 1)
-        else:
-            next_month = datetime(year, month + 1, 1)
+        query = {}
 
-        query = {
-            'startTime': {
-                '$gte': start,
-                '$lt': next_month
+        timescale = kwargs.get('timescale', 'Monthly')
+        month = kwargs.get('month', '2021-01')
+        year = kwargs.get('year', '2021')
+
+        if timescale == 'Monthly':
+            month = kwargs.get('month', month)
+            year, month = map(int, month.split('-'))
+            start = datetime(year, month, 1)
+            if month == 12:
+                next_month = datetime(year + 1, 1, 1)
+            else:
+                next_month = datetime(year, month + 1, 1)
+
+            query = {
+                'startTime': {
+                    '$gte': start,
+                    '$lt': next_month
+                }
             }
-        }
-        return _self.find(query=query, **kwargs)
+        elif timescale == 'Yearly':
+            year = int(kwargs.get('year', year))
+            start = datetime(year, 1, 1)
+            next_year = datetime(year + 1, 1, 1)
 
-    @st.cache_data(ttl=600)
-    def get_full_data(_self, **kwargs):
-        '''Get entire dataset from database, cached once'''
-        db = _self._client[kwargs.get('db', 'ind320')]
-        collection = db[kwargs.get('table', 'elhub')]
-        
-        df = pd.DataFrame(list(collection.find({})))
-        if '_id' in df.columns:
-            df.drop(columns=['_id'], inplace=True)
-        
-        # Set index for efficient slicing
-        # df = df.set_index('startTime')
-        df = df.reset_index().set_index(
-            ['priceArea', 'productionGroup', 'startTime']
-            ).sort_index()
-        return df
+            query = {
+                'startTime': {
+                    '$gte': start,
+                    '$lt': next_year
+                }
+            }
+        return _self.find(query=query, **kwargs)
     
     @st.cache_data
     def distinct(_self, **kwargs):
