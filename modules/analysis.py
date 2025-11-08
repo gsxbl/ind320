@@ -118,9 +118,9 @@ def plot_LOF(data, key:str, **kwargs):
 def plot_STL(data, area, group, **kwargs):
     '''
     Defaults:
-    period=24*15, robust=False, seasonal=7,
+    period=24*7*4, robust=False, seasonal=7,
     trend=If not provided uses the smallest odd
-    integer greater than 1.5 * period / (1 - 1.5 / seasonal)
+    integer greater than 1.5 * period / (1 - (1.5 / seasonal))
     '''
     # reorganize the dataframe
     data = data.copy().reset_index().set_index(
@@ -172,7 +172,5 @@ def plot_STFT(data, area, group, **kwargs):
         xaxis_title='Time [days]',
         yaxis_title='Frequency [cycles per hour]',
     )
-    
-
     
     return fig
