@@ -2,6 +2,7 @@
 import pymongo
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 ### MONGO DB ###
 class Mongo:
@@ -14,7 +15,8 @@ class Mongo:
         return pymongo.MongoClient(st.secrets["mongo"]["uri"])
 
     @st.cache_data(ttl=600)
-    def find(_self, **kwargs): 
+    def find(_self, **kwargs):
+        '''Generic find method to get data from database'''
         db = _self._client[kwargs.get('db', 'ind320')]
         collection = db[kwargs.get('table', 'elhub')]
 
@@ -30,6 +32,27 @@ class Mongo:
         return df
     
     @st.cache_data(ttl=600)
+    def get_data_by_month(_self, **kwargs):
+        '''Get data for a specific month from the database'''
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+        month = kwargs.get('month', st.session_state.month)
+        year, month = map(int, month.split('-'))
+        start = datetime(year, month, 1)
+        if month == 12:
+            next_month = datetime(year + 1, 1, 1)
+        else:
+            next_month = datetime(year, month + 1, 1)
+
+        query = {
+            'startTime': {
+                '$gte': start,
+                '$lt': next_month
+            }
+        }
+        return _self.find(query=query, **kwargs)
+
+    @st.cache_data(ttl=600)
     def get_full_data(_self, **kwargs):
         '''Get entire dataset from database, cached once'''
         db = _self._client[kwargs.get('db', 'ind320')]
@@ -40,13 +63,51 @@ class Mongo:
             df.drop(columns=['_id'], inplace=True)
         
         # Set index for efficient slicing
-        df = df.set_index('startTime')
+        # df = df.set_index('startTime')
+        df = df.reset_index().set_index(
+            ['priceArea', 'productionGroup', 'startTime']
+            ).sort_index()
         return df
     
     @st.cache_data
     def distinct(_self, **kwargs):
+        '''method to get distinct values from a column in the database'''
         db = _self._client[kwargs.get('db', 'ind320')]
         collection = db[kwargs.get('table', 'elhub')]
         column = kwargs.get('column', 'priceArea')
         return collection.distinct(column)
+    
+    @st.cache_data(ttl=600)
+    def months(_self, **kwargs):
+        '''method to get available months from the database'''
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+
+        pipeline = [
+            {"$group": {"_id": {
+                "year": {"$year": "$startTime"},
+                "month": {"$month": "$startTime"}
+            }}},
+            {"$project": {"_id": 0, "y": "$_id.year", "m": "$_id.month"}},
+            {"$sort": {"y": 1, "m": 1}}
+        ]
+
+        res = list(collection.aggregate(pipeline))
+        # format as YYYY-MM strings
+        return [f"{doc['y']:04d}-{doc['m']:02d}" for doc in res]
+    
+    @st.cache_data(ttl=600)
+    def years(_self, **kwargs):
+        '''method to get available years from the database'''
+        db = _self._client[kwargs.get('db', 'ind320')]
+        collection = db[kwargs.get('table', 'elhub')]
+
+        pipeline = [
+            {"$group": {"_id": {"year": {"$year": "$startTime"}}}},
+            {"$project": {"_id": 0, "y": "$_id.year"}},
+            {"$sort": {"y": 1}}
+        ]
+
+        res = list(collection.aggregate(pipeline))
+        return [str(doc['y']) for doc in res]
     
