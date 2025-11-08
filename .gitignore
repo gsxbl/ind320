@@ -9,6 +9,8 @@ docker-compose.yml
 dev.ipynb
 **/*.pdf
 **/*.html
+**/*.env
+**/*.png
 
 # VSC stuff
 **/*pycache*
