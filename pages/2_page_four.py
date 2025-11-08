@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 
 from modules.db import Mongo
 from modules.session import SessionState
+from modules.header import Header
 
 class Page4:
     '''
@@ -13,40 +14,50 @@ class Page4:
     making them accessible to all methods.
     '''
     def __init__(self):
-        # setup session state
-        SessionState()
-
         # general page setup
         st.set_page_config(layout='wide')
-        st.markdown(
-            '# Elhub data'
-        )
+        
+        # setup session state
+        SessionState()
+        Header()
+
         # instantiate client
         self._db = Mongo()
         
-        # cache the full dataset
-        self._df_full = self._db.get_full_data()
+        # load dataframe from database
+        self._load_df()
 
-    def _get_areas(self):
+        
+    def _load_df(self):
         '''
-        Method to get available priceAreas for
-        frontend radio selector
+        Method to load dataframe from MongoDB based on session state month
         '''
-        self._areas = self._db.distinct(column='priceArea')
+        # query Mongo for data in that month range
+        self._df = self._db.get_data_by_month(
+            index=['priceArea', 'productionGroup', 'startTime'],
+            month=st.session_state.month
+        )
 
-    def _get_groups(self):
-        '''
-        Method to get available productionGroups for
-        frontend pills selector
-        '''
-        self._groups = self._db.distinct(column='productionGroup')
+    # def _get_areas(self):
+    #     '''
+    #     Method to get available priceAreas for
+    #     frontend radio selector
+    #     '''
+    #     self._areas = self._db.distinct(column='priceArea')
 
-    def _get_months(self):
-        '''
-        Method to get available months from the cached data
-        for frontend month selector
-        '''
-        self._months = sorted(self._df_full.index.to_period('M').unique().astype(str))
+    # def _get_groups(self):
+    #     '''
+    #     Method to get available productionGroups for
+    #     frontend pills selector
+    #     '''
+    #     self._groups = self._db.distinct(column='productionGroup')
+
+    # def _get_months(self):
+    #     '''
+    #     Method to get available months from the cached data
+    #     for frontend month selector
+    #     '''
+    #     self._months = sorted(self._df.index.to_period('M').unique().astype(str))
 
     def _setup_columns(self):
         '''
@@ -54,40 +65,40 @@ class Page4:
         '''
         self._c1, self._c2 = st.columns((1,2))
 
-    def _setup_area_selector(self):
-        '''
-        Method to get radio button selection from
-        frontend. Persist to streamlit session state.
-        '''
-        self._area = st.radio(
-            '', self._areas,
-            index=self._areas.index(st.session_state.area),
-            horizontal=True
-            )
+    # def _setup_area_selector(self):
+    #     '''
+    #     Method to get radio button selection from
+    #     frontend. Persist to streamlit session state.
+    #     '''
+    #     self._area = st.radio(
+    #         '', self._areas,
+    #         index=self._areas.index(st.session_state.area),
+    #         horizontal=True
+    #         )
         
-        st.session_state.area = self._area
+    #     st.session_state.area = self._area
         
-    def _setup_group_selector(self):
-        '''
-        Method to get pill button selections from
-        frontend
-        '''
-        self._group = st.pills(
-            '', self._groups,
-            selection_mode='multi',
-            default=self._groups[0],
-            )
+    # def _setup_group_selector(self):
+    #     '''
+    #     Method to get pill button selections from
+    #     frontend
+    #     '''
+    #     self._group = st.pills(
+    #         '', self._groups,
+    #         selection_mode='multi',
+    #         default=self._groups[0],
+    #         )
 
-    def _setup_month_selector(self):
-        '''
-        Method to get month selection from frontend
-        '''
-        self._month = st.radio('',
-            self._months,
-            index=self._months.index(st.session_state.month),
-            horizontal=True
-        )
-        st.session_state.month = self._month
+    # def _setup_month_selector(self):
+    #     '''
+    #     Method to get month selection from frontend
+    #     '''
+    #     self._month = st.radio('',
+    #         self._months,
+    #         index=self._months.index(st.session_state.month),
+    #         horizontal=True
+    #     )
+    #     st.session_state.month = self._month
 
     def _setup_doc(self):
         with st.expander('Data source:'):
@@ -104,13 +115,12 @@ class Page4:
         render pie chart to frontend.
         '''
         # Check if any areas are selected
-        if not self._area:
-            st.markdown('No area selected')
-            return
+        # if not self._area:
+        #     st.markdown('No area selected')
+        #     return
         
         # Filter from cached full dataframe by area and month
-        df = self._df_full[self._df_full['priceArea'] == self._area]
-        df = df[df.index.to_period('M').astype(str) == self._month]
+        df = self._df.loc[st.session_state.area]
         df = df.groupby('productionGroup').agg('sum')
 
         fig = go.Figure()
@@ -123,7 +133,7 @@ class Page4:
         )
 
         fig.update_layout(
-            title=f'Production in {self._area} [{self._month}] [%, TWh]')
+            title=f'Production in {st.session_state.area} [{st.session_state.month}] [%, TWh]')
         
         st.plotly_chart(fig)
 
@@ -134,31 +144,27 @@ class Page4:
         Method renders the figure to frontend using cached data.
         '''
 
-        if not isinstance(self._group, list):
-            self._group = list(self._group)     
+        # if not isinstance(self._group, list):
+        #     self._group = list(self._group)     
 
         fig = go.Figure()
 
-        # iterate frontend selected groups and areas
-        for group in self._group:
-            # Filter from cached full dataframe by area, group, and month
-            df = self._df_full[
-                (self._df_full['productionGroup'] == group) &
-                (self._df_full['priceArea'] == self._area)
-            ].copy()
-            df = df[df.index.to_period('M').astype(str) == self._month]
-            df.sort_index(inplace=True)
-            # create trace
-            trace = go.Scatter(
-                x = df.index,
-                y = df['quantityKwh'] / 1e3,
-                name=f'{self._area} - {group}',
-                opacity=0.5
-            )
-            fig.add_trace(trace)
+        
+        # Filter from cached full dataframe by area, group, and month
+        df = self._df.loc[(st.session_state.area, st.session_state.group)]
+        df = df[df.index.to_period('M').astype(str) == st.session_state.month]
+        df.sort_index(inplace=True)
+        # create trace
+        trace = go.Scatter(
+            x = df.index,
+            y = df['quantityKwh'] / 1e3,
+            name=f'{st.session_state.area} - {st.session_state.group}',
+            opacity=0.5
+        )
+        fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'Production in {self._area} [{self._month}] [MWh]',
+            title=f'Production in {st.session_state.area} [{st.session_state.month}] [MWh]',
             yaxis=dict(
                 title='Production [MWh]'
             )
@@ -176,26 +182,26 @@ class Page4:
         in the right column.
         '''
         # Month selector at top (above charts)
-        self._setup_month_selector()
+        # self._setup_month_selector()
         self._setup_columns()
         
         # left column/container
         with self._c1:
-            self._setup_area_selector()
+            # self._setup_area_selector()
             self._pie_chart()
         
         # right column/container
         with self._c2:
-            self._setup_group_selector()
+            # self._setup_group_selector()
             self._line_plot()
         
         self._setup_doc()
 
     def run(self):
         '''Main runtime method'''
-        self._get_areas()
-        self._get_groups()
-        self._get_months()
+        # self._get_areas()
+        # self._get_groups()
+        # self._get_months()
         self._setup_contents()
 
 
