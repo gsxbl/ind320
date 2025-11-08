@@ -11,15 +11,23 @@ class Header:
     
     It initializes the session state for the app.
     '''
-    def __init__(self):
+    def __init__(self, **kwargs):
         # Initialize session state
         SessionState()
     
         # instantiate client
         self._db = Mongo()
+        self._set_kwargs(**kwargs)
 
         # render
         self.render_header()
+    
+    def _set_kwargs(self, **kwargs):
+        '''
+        Method to set any kwargs passed to the class
+        '''
+        self._group_options = kwargs.get('group_options', 'multi')
+
 
     def _get_areas(self):
         '''
@@ -48,6 +56,18 @@ class Header:
         for frontend month selector
         '''
         self._months = self._db.months()
+
+    def _setup_timescale_selector(self):
+        '''
+        Method to get timescale selection from
+        frontend. Persist to streamlit session state.
+        '''
+        self._timescale = st.selectbox(
+            '', ['Monthly', 'Yearly'],
+            index=['Monthly', 'Yearly'].index(st.session_state.timescale)
+            )
+
+        st.session_state.timescale = self._timescale
 
     def _setup_year_selector(self):
         '''
@@ -91,11 +111,16 @@ class Header:
         Method to get pill button selections from
         frontend
         '''
-        self._group = st.radio(
+        default = self._groups if self._group_options == 'multi' else self._groups[0]
+
+        self._group = st.pills(
             '', self._groups,
-            index=self._groups.index(st.session_state.group),
-            horizontal=True
+            selection_mode=self._group_options,
+            default=default,
         )
+        if isinstance(self._group, str):
+            self._group = [self._group]  # make it a list for consistency
+            
         st.session_state.group = self._group
 
     def _setup_containers(self):
@@ -113,12 +138,15 @@ class Header:
         self._get_years()
         self._get_months()
 
-        with st.expander('Data Selection Settings', expanded=False):
+        with st.expander('Data Slicers', expanded=False):
             self._setup_containers()
 
         with self._c1:
-            self._setup_year_selector()
+            self._setup_timescale_selector()
             self._setup_area_selector()
         with self._c2:
-            self._setup_month_selector()
+            if self._timescale == 'Monthly':
+                self._setup_month_selector()
+            else:
+                self._setup_year_selector()
             self._setup_group_selector()
