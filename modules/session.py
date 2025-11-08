@@ -11,11 +11,18 @@ class SessionState:
         """Initialize default session state variables if not already set."""
         if 'area' not in st.session_state:
             st.session_state.area = 'NO1'
+
         if 'month' not in st.session_state:
             st.session_state.month = '2021-01'
+
         if 'kind' not in st.session_state:
             st.session_state.kind = 'temperature_2m'
+
         if 'group' not in st.session_state:
             st.session_state.group = []
+
         if 'year' not in st.session_state:
             st.session_state.year = '2021'
+            
+        if 'timescale' not in st.session_state:
+            st.session_state.timescale = 'Monthly'
