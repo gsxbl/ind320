@@ -157,8 +157,8 @@ def plot_STFT(data, area, group, **kwargs):
         data.loc[area, group]['quantityKwh'],
         fs=1,
         window='hann',
-        nperseg=kwargs.get('nperseg', 256),
-        noverlap=kwargs.get('noverlap', 128),
+        nperseg=kwargs.get('nperseg', 31),
+        noverlap=kwargs.get('noverlap', 30),
         boundary=None)
 
     fig = go.Figure(data=go.Heatmap(
@@ -170,7 +170,8 @@ def plot_STFT(data, area, group, **kwargs):
     fig.update_layout(
         title=f'STFT Spectrogram for {area} - {group}',
         xaxis_title='Time [days]',
-        yaxis_title='Frequency [cycles per day]')
+        yaxis_title='Frequency [cycles per hour]',
+    )
     
 
     
