@@ -49,7 +49,7 @@ class Page3:
         '''
         Method to set the page header.
         '''
-        st.header(f'Weather Data for {self._loc(st.session_state.area, True)}')
+        st.header(f'Weather Data for {st.session_state.city}')
     
     def _setup_kind_selector(self):
         '''

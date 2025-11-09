@@ -24,7 +24,8 @@ class Page2:
         '''
         Method to set the page header.
         '''
-        st.header(f'Weather Data for {self._loc(st.session_state.area, True)}')
+        
+        st.header(f'Weather Data for {(st.session_state.city)}')
         st.subheader(f'Period: {st.session_state.month}')
 
     ### LINE CHART COLUMN HELPER ###

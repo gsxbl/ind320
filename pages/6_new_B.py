@@ -25,7 +25,7 @@ class NewB:
         '''
         Method to set the page header.
         '''
-        st.header(f'Weather Analysis for {self._loc(st.session_state.area, True)}')
+        st.header(f'Weather Analysis for {st.session_state.city}')
 
     def _get_data(self):
         '''

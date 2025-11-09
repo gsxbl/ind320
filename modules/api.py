@@ -27,19 +27,9 @@ class GeoPos:
         arg = self._conv.get(arg, None)
         return self._locations.get(arg, None)
     
-    # @property
-    # def areas(self):
-    #     """Return list of available area codes."""
-    #     return list(self._conv.keys())
-    
-    # @property
-    # def cities(self):
-    #     """Return list of available city names."""
-    #     return list(self._locations.keys())
-
-    # def get_area(self, city):
-    #     """Get area code for a given city name."""
-    #     return self._conv2.get(city, None)
+    def city_name(self, area_code):
+        '''Method to get city name from area code'''
+        return self._conv.get(area_code, None)
 
 class OpenMeteo:
     """Client for Open-Meteo weather API with Streamlit caching."""
