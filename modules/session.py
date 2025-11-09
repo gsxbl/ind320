@@ -1,6 +1,6 @@
 """module to manage session state variables in Streamlit."""
 import streamlit as st
-from .api import GeoPos
+from .geo import GeoPos
 
 class SessionState:
     """Class to manage Streamlit session state variables."""
@@ -16,6 +16,9 @@ class SessionState:
 
         if 'city' not in st.session_state:
             st.session_state.city = self._geo.city_name(st.session_state.area)
+
+        if 'geo' not in st.session_state:
+            st.session_state.geo = self._geo
 
         if 'month' not in st.session_state:
             st.session_state.month = '2021-01'

@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
-from modules.api import OpenMeteo, GeoPos
+from modules.api import OpenMeteo
+from modules.geo import GeoPos
 from modules.session import SessionState
 
 class Page2:

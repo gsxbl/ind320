@@ -1,7 +1,8 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-from modules.api import GeoPos, OpenMeteo
+from modules.api import OpenMeteo
+from modules.geo import GeoPos
 from modules.session import SessionState
 
 class Page3:

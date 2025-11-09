@@ -1,7 +1,9 @@
 import streamlit as st
+import modules
 from modules.session import SessionState
 
-from modules.api import OpenMeteo, GeoPos
+from modules.api import OpenMeteo
+from modules.geo import GeoPos
 from modules.analysis import plot_SPC, plot_LOF
 
 class NewB:
