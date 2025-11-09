@@ -44,6 +44,17 @@ class NewA:
                 year=st.session_state.year
             )
 
+    def _setup_heading(self):
+        '''
+        Method to setup page heading
+        '''
+        if st.session_state.timescale == 'Monthly':
+            scale = st.session_state.month
+        else:
+            scale = st.session_state.year
+
+        st.header(f'Production analysis for {scale}')
+        
     def _setup_tabs(self):
         '''
         Method to setup tabs for the page. One tab for STL analysis,
@@ -150,7 +161,7 @@ class NewA:
             self._plot_stft()
 
     def run(self):
-        st.header(f'Production analysis for {st.session_state.area}')
+        self._setup_heading()
         self._setup_tabs()
         self.setup_contents()
 
