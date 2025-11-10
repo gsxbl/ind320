@@ -74,7 +74,7 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._table = st.selectbox(
-            '', ['consumption', 'elhub'],
+            'Select data table', ['consumption', 'elhub'],
             index=['consumption', 'elhub'].index(st.session_state.table)
             )
 
@@ -90,7 +90,7 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._timescale = st.selectbox(
-            '', ['Monthly', 'Annual', 'Custom'],
+            'Select time scale', ['Monthly', 'Annual', 'Custom'],
             index=['Monthly', 'Annual', 'Custom'].index(st.session_state.timescale)
             )
 
@@ -102,7 +102,7 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._year = st.selectbox(
-            '', self._years,
+            'Select year', self._years,
             index=self._years.index(st.session_state.year)
             )
 
@@ -114,7 +114,7 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._month = st.selectbox(
-            '', self._months,
+            'Select month', self._months,
             index=self._months.index(st.session_state.month)
             )
 
@@ -136,7 +136,7 @@ class Header:
 
         # Use the validated values to render the slider.
         self._start_time, self._end_time = st.select_slider(
-            '',
+            'Select time range',
             options=self._time_range,
             value=(start_val, end_val)
         )
@@ -150,7 +150,7 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._area = st.radio(
-            '', self._areas,
+            'Select price area', self._areas,
             index=self._areas.index(st.session_state.area),
             horizontal=True
             )
@@ -165,7 +165,7 @@ class Header:
         default = self._groups if self._group_options == 'multi' else self._groups[0]
 
         self._group = st.pills(
-            '', self._groups,
+            f'Select {st.session_state.column}', self._groups,
             selection_mode=self._group_options,
             default=default,
         )
