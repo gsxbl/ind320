@@ -21,27 +21,17 @@ class NewA:
         # instantiate mongo client
         self._db = Mongo()
 
-        # load dataframe from database
-        self._load_df()
-
-
-    def _load_df(self):
+    def _load_data(self):
         '''
-        Method to load dataframe from MongoDB based on session state month
+        Load data from MongoDB based on session state.
         '''
-        # split methods to preserve cache efficiency
-        if st.session_state.timescale == 'Monthly':
-            self._df = self._db.get_data(
-                index=['priceArea', 'productionGroup', 'startTime'],
-                timescale='Monthly',
-                month=st.session_state.month
-            )
-        else:
-            self._df = self._db.get_data(
-                index=['priceArea', 'productionGroup', 'startTime'],
-                timescale='Yearly',
-                year=st.session_state.year
-            )
+        self._df = self._db.get_data(
+            timescale=st.session_state.timescale,
+            year=st.session_state.year,
+            month=st.session_state.month,
+            table=st.session_state.table,
+            index=['priceArea', st.session_state.column, 'startTime']
+        )
 
     def _setup_heading(self):
         '''
@@ -52,7 +42,7 @@ class NewA:
         else:
             scale = st.session_state.year
 
-        st.header(f'Production analysis for {scale}')
+        st.header(f'{st.session_state.column[:-5]} analysis for {scale}')
         
     def _setup_tabs(self):
         '''
@@ -160,9 +150,13 @@ class NewA:
             self._plot_stft()
 
     def run(self):
-        self._setup_heading()
-        self._setup_tabs()
-        self.setup_contents()
+        try:
+            self._load_data()
+            self._setup_heading()
+            self._setup_tabs()
+            self.setup_contents()
+        except Exception as e:
+            st.warning(f"An error occurred while rendering the page: {e}")
 
 if __name__ == '__main__':
     main = NewA()

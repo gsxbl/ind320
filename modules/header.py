@@ -2,6 +2,7 @@
 
 import streamlit as st
 from .session import SessionState
+from .geo import GeoPos
 from .db import Mongo
 
 
@@ -13,7 +14,8 @@ class Header:
     '''
     def __init__(self, **kwargs):
         # Initialize session state
-        SessionState()
+        self._state = SessionState()
+        GeoPos()
     
         # instantiate client
         self._db = Mongo()
@@ -28,34 +30,50 @@ class Header:
         '''
         self._group_options = kwargs.get('group_options', 'multi')
 
-
     def _get_areas(self):
         '''
         Method to get available priceAreas for
         frontend radio selector
         '''
-        self._areas = self._db.distinct(column='priceArea')
+        self._areas = self._db.distinct(column='priceArea', table=st.session_state.table)
 
     def _get_groups(self):
         '''
         Method to get available productionGroups for
         frontend pills selector
         '''
-        self._groups = self._db.distinct(column='productionGroup')
+        col = 'productionGroup' if st.session_state.table == 'elhub' else 'consumptionGroup'
+        self._groups = self._db.distinct(column=col, table=st.session_state.table)
 
     def _get_years(self):
         '''
         Method to get available years from the cached data
         for frontend year selector
         '''
-        self._years = self._db.years()
+        self._years = self._db.years(table=st.session_state.table)
 
     def _get_months(self):
         '''
         Method to get available months from the cached data
         for frontend month selector
         '''
-        self._months = self._db.months()
+        self._months = self._db.months(table=st.session_state.table)
+
+    def _setup_table_selector(self):
+        '''
+        Method to get table selection from
+        frontend. Persist to streamlit session state.
+        '''
+        self._table = st.selectbox(
+            '', ['consumption', 'elhub'],
+            index=['consumption', 'elhub'].index(st.session_state.table)
+            )
+
+        st.session_state.table = self._table
+        if self._table == 'elhub':
+            st.session_state.column = 'productionGroup'
+        else:
+            st.session_state.column = 'consumptionGroup'
 
     def _setup_timescale_selector(self):
         '''
@@ -104,7 +122,7 @@ class Header:
             horizontal=True
             )
         
-        st.session_state.area = self._area
+        self._state.update_area(self._area)
 
     def _setup_group_selector(self):
         '''
@@ -127,26 +145,33 @@ class Header:
         '''
         Method to setup containers for header layout
         '''
-        self._c1, self._c2 =st.columns(2)
+        self._c1, self._c2, self._c3 =st.columns([2, 2, 3])
     
     def render_header(self):
         '''
-        Method to render the header components
+        Method to render the header components in the correct order
+        to preserve logic and dependencies.    
         '''
-        self._get_areas()
-        self._get_groups()
-        self._get_years()
-        self._get_months()
-
         with st.expander('Data Slicers', expanded=False):
             self._setup_containers()
 
-        with self._c1:
-            self._setup_timescale_selector()
-            self._setup_area_selector()
-        with self._c2:
-            if self._timescale == 'Monthly':
-                self._setup_month_selector()
-            else:
-                self._setup_year_selector()
-            self._setup_group_selector()
+            with self._c1:
+                self._setup_timescale_selector()
+            with self._c2:
+                self._setup_table_selector()
+
+            self._get_areas()
+            self._get_groups()
+            self._get_years()
+            self._get_months()
+
+            with self._c1:
+                self._setup_area_selector()
+
+            with self._c3:
+                # These selectors depend on the timescale and table.
+                if self._timescale == 'Monthly':
+                    self._setup_month_selector()
+                else:
+                    self._setup_year_selector()
+                self._setup_group_selector()

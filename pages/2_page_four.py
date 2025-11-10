@@ -25,26 +25,18 @@ class Page4:
         self._db = Mongo()
         
         # load dataframe from database
-        self._load_df()
+        self._load_data()
 
 
-    def _load_df(self):
-        '''
-        Method to load dataframe from MongoDB based on session state month
-        '''
-        # split methods to preserve cache efficiency
-        if st.session_state.timescale == 'Monthly':
-            self._df = self._db.get_data(
-                index=['priceArea', 'productionGroup', 'startTime'],
-                timescale='Monthly',
-                month=st.session_state.month
-            )
-        else:
-            self._df = self._db.get_data(
-                index=['priceArea', 'productionGroup', 'startTime'],
-                timescale='Yearly',
-                year=st.session_state.year
-            )
+    def _load_data(self):
+        """Load data from MongoDB based on session state."""
+        self._df = self._db.get_data(
+            timescale=st.session_state.timescale,
+            year=st.session_state.year,
+            month=st.session_state.month,
+            table=st.session_state.table,
+            index=['priceArea', st.session_state.column, 'startTime']
+        )
 
     def _setup_columns(self):
         '''
@@ -66,9 +58,10 @@ class Page4:
         Method to filter cached data from database and
         render pie chart to frontend.
         '''
+        
         # Filter from cached full dataframe by area and month
         df = self._df.loc[st.session_state.area]
-        df = df.groupby('productionGroup').agg('sum')
+        df = df.groupby(st.session_state.column).agg('sum')
 
         fig = go.Figure()
 
@@ -81,10 +74,10 @@ class Page4:
         # dynamic title based on timescale
         if st.session_state.timescale == 'Monthly':
             fig.update_layout(
-                title=f'Production in {st.session_state.area} [{st.session_state.month}] [%, TWh]')
+                title=f'{st.session_state.column[:-5]} in {st.session_state.area} [{st.session_state.month}] [%, TWh]')
         else:
             fig.update_layout(
-                title=f'Production in {st.session_state.area} [{st.session_state.year}] [%, TWh]')
+                title=f'{st.session_state.column[:-5]} in {st.session_state.area} [{st.session_state.year}] [%, TWh]')
 
         st.plotly_chart(fig)
 
@@ -102,7 +95,7 @@ class Page4:
         
         # iterate groups and add traces
         for group in st.session_state.group:
-
+    
             # Filter from cached full dataframe by area, group, and month
             df = self._df.loc[(st.session_state.area, group)]
             df = df[df.index.to_period(S).astype(str) == scale]
@@ -118,9 +111,9 @@ class Page4:
             fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'Production in {st.session_state.area} [{scale}] [MWh]',
+            title=f'{st.session_state.column[:-5]} in {st.session_state.area} [{scale}] [MWh]',
             yaxis=dict(
-                title='Production [MWh]'
+                title=f'{st.session_state.column[:-5]} [MWh]'
             )
         )
 
@@ -152,7 +145,10 @@ class Page4:
 
     def run(self):
         '''Main runtime method'''
-        self._setup_contents()
+        try:
+            self._setup_contents()
+        except Exception as e:
+            st.warning(f'An error occurred: {e}, please select Slicer one more time.')
 
 
 if __name__ == '__main__':

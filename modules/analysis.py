@@ -124,7 +124,7 @@ def plot_STL(data, area, group, **kwargs):
     '''
     # reorganize the dataframe
     data = data.copy().reset_index().set_index(
-        ['priceArea', 'productionGroup', 'startTime']
+        ['priceArea', st.session_state.column, 'startTime']
         ).sort_index()
     
     stl = STL(
