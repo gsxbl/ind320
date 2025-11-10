@@ -1,6 +1,5 @@
 import streamlit as st
-from streamlit_folium import st_folium
-import folium, json
+import json
 import plotly.graph_objects as go
 from modules.session import SessionState
 from modules.header import Header
@@ -115,7 +114,7 @@ class Main:
             mapbox_center={"lat": lat, "lon": lon},
             mapbox_zoom=5,
 
-            height=600,
+            height=800,
             margin={"r": 0, "t": 0, "l": 0, "b": 0}
         )
 
