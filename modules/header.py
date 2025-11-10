@@ -59,6 +59,15 @@ class Header:
         '''
         self._months = self._db.months(table=st.session_state.table)
 
+    def _get_time_range(self):
+        '''
+        Method to get available time range from the cached data
+        for frontend custom time selector
+        '''
+        self._time_range = self._db.distinct(
+            table=st.session_state.table,
+            column='startTime')
+
     def _setup_table_selector(self):
         '''
         Method to get table selection from
@@ -81,8 +90,8 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._timescale = st.selectbox(
-            '', ['Monthly', 'Yearly'],
-            index=['Monthly', 'Yearly'].index(st.session_state.timescale)
+            '', ['Monthly', 'Annual', 'Custom'],
+            index=['Monthly', 'Annual', 'Custom'].index(st.session_state.timescale)
             )
 
         st.session_state.timescale = self._timescale
@@ -110,6 +119,30 @@ class Header:
             )
 
         st.session_state.month = self._month
+
+    def _setup_time_range_selector(self):
+        '''
+        Method to get time range selection from
+        frontend. Persist to streamlit session state.
+        '''
+        start_val = st.session_state.get('start_time')
+        end_val = st.session_state.get('end_time')
+
+        if not start_val or start_val not in self._time_range:
+            start_val = self._time_range[0]
+        # set start time to first value if not set
+        if not end_val or end_val not in self._time_range:
+            end_val = self._time_range[1]
+
+        # Use the validated values to render the slider.
+        self._start_time, self._end_time = st.select_slider(
+            '',
+            options=self._time_range,
+            value=(start_val, end_val)
+        )
+
+        st.session_state.start_time = self._start_time
+        st.session_state.end_time = self._end_time
 
     def _setup_area_selector(self):
         '''
@@ -164,6 +197,8 @@ class Header:
             self._get_groups()
             self._get_years()
             self._get_months()
+            self._get_time_range()
+            
 
             with self._c1:
                 self._setup_area_selector()
@@ -172,6 +207,8 @@ class Header:
                 # These selectors depend on the timescale and table.
                 if self._timescale == 'Monthly':
                     self._setup_month_selector()
+                elif self._timescale == 'Custom':
+                    self._setup_time_range_selector()
                 else:
                     self._setup_year_selector()
                 self._setup_group_selector()

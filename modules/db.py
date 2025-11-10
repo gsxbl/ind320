@@ -34,7 +34,7 @@ class Mongo:
     @st.cache_data(ttl=600)
     def get_data(_self, **kwargs):
         '''Generic method to get data from database,
-        either by YYYY-MM or YYYY
+        either by YYYY-MM, YYYY or startTime and endTime range
         '''
         db = _self._client[kwargs.get('db', 'ind320')]
         collection = db[kwargs.get('table', 'elhub')]
@@ -43,6 +43,9 @@ class Mongo:
         timescale = kwargs.get('timescale', 'Monthly')
         month = kwargs.get('month', '2021-01')
         year = kwargs.get('year', '2021')
+        start_time = kwargs.get('start_time', None)
+        end_time = kwargs.get('end_time', None)
+
 
         if timescale == 'Monthly':
             month = kwargs.get('month', month)
@@ -59,7 +62,7 @@ class Mongo:
                     '$lt': next_month
                 }
             }
-        elif timescale == 'Yearly':
+        elif timescale == 'Annual':
             year = int(kwargs.get('year', year))
             start = datetime(year, 1, 1)
             next_year = datetime(year + 1, 1, 1)
@@ -70,6 +73,17 @@ class Mongo:
                     '$lt': next_year
                 }
             }
+
+        elif timescale == 'Custom':
+            start = kwargs.get('start_time', start_time)
+            end = kwargs.get('end_time', end_time)
+            if start and end:
+                query = {
+                    'startTime': {
+                        '$gte': start,
+                        '$lte': end
+                    }
+                }
         return _self.find(query=query, **kwargs)
     
     @st.cache_data(ttl=600)
@@ -158,4 +172,3 @@ class Mongo:
 
         res = list(collection.aggregate(pipeline))
         return [str(doc['y']) for doc in res]
-    

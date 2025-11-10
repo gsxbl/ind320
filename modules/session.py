@@ -11,6 +11,9 @@ class SessionState:
     
     def _initialize_session_state(self):
         """Initialize default session state variables if not already set."""
+        if 'table' not in st.session_state:
+            st.session_state.table = 'consumption'
+
         if 'area' not in st.session_state:
             st.session_state.area = 'NO1'
 
@@ -24,23 +27,26 @@ class SessionState:
             st.session_state.nve_code = self._geo._locations[
                 st.session_state.area]['nve_code']
 
-        if 'month' not in st.session_state:
-            st.session_state.month = '2022-01'
-
         if 'kind' not in st.session_state:
             st.session_state.kind = 'temperature_2m'
 
         if 'group' not in st.session_state:
             st.session_state.group = []
 
+        if 'month' not in st.session_state:
+            st.session_state.month = '2022-01'
+
         if 'year' not in st.session_state:
             st.session_state.year = '2022'
-            
+
+        if 'start_time' not in st.session_state:
+            st.session_state.start_time = None
+
+        if 'end_time' not in st.session_state:
+            st.session_state.end_time = None
+
         if 'timescale' not in st.session_state:
             st.session_state.timescale = 'Monthly'
-
-        if 'table' not in st.session_state:
-            st.session_state.table = 'consumption'
 
         if 'column' not in st.session_state:
             st.session_state.column = 'consumptionGroup'
@@ -51,4 +57,5 @@ class SessionState:
         st.session_state.city = self._geo.city_name(area_code)
         st.session_state.geo = self._geo(area_code)
         st.session_state.nve_code = self._geo._locations[area_code]['nve_code']
+        
 

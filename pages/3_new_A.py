@@ -30,6 +30,8 @@ class NewA:
             year=st.session_state.year,
             month=st.session_state.month,
             table=st.session_state.table,
+            start_time=st.session_state.start_time,
+            end_time=st.session_state.end_time,
             index=['priceArea', st.session_state.column, 'startTime']
         )
 

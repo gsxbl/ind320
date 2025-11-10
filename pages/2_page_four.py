@@ -29,12 +29,16 @@ class Page4:
 
 
     def _load_data(self):
-        """Load data from MongoDB based on session state."""
+        '''
+        Load data from MongoDB based on session state.
+        '''
         self._df = self._db.get_data(
             timescale=st.session_state.timescale,
             year=st.session_state.year,
             month=st.session_state.month,
             table=st.session_state.table,
+            start_time=st.session_state.start_time,
+            end_time=st.session_state.end_time,
             index=['priceArea', st.session_state.column, 'startTime']
         )
 
@@ -74,10 +78,12 @@ class Page4:
         # dynamic title based on timescale
         if st.session_state.timescale == 'Monthly':
             fig.update_layout(
-                title=f'{st.session_state.column[:-5]} in {st.session_state.area} [{st.session_state.month}] [%, TWh]')
+                title=f'{st.session_state.column[:-5]} in {st.session_state.area} \
+                    [{st.session_state.month}] [%, TWh]')
         else:
             fig.update_layout(
-                title=f'{st.session_state.column[:-5]} in {st.session_state.area} [{st.session_state.year}] [%, TWh]')
+                title=f'{st.session_state.column[:-5]} in {st.session_state.area} \
+                    [{st.session_state.year}] [%, TWh]')
 
         st.plotly_chart(fig)
 
@@ -98,7 +104,6 @@ class Page4:
     
             # Filter from cached full dataframe by area, group, and month
             df = self._df.loc[(st.session_state.area, group)]
-            df = df[df.index.to_period(S).astype(str) == scale]
             df.sort_index(inplace=True)
 
             # create trace
@@ -145,10 +150,10 @@ class Page4:
 
     def run(self):
         '''Main runtime method'''
-        try:
-            self._setup_contents()
-        except Exception as e:
-            st.warning(f'An error occurred: {e}, please select Slicer one more time.')
+        
+        self._setup_contents()
+        # except Exception as e:
+            # st.warning(f'An error occurred: {e}, please select Slicer one more time.')
 
 
 if __name__ == '__main__':
