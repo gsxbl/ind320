@@ -88,9 +88,19 @@ class Mongo:
     
     @st.cache_data(ttl=600)
     def mean_by_area(_self, **kwargs):
-        '''method to get mean quantityKwh grouped by priceArea and timescale'''
+        table = kwargs.get('table', 'elhub')
+        groups = kwargs.get('groups', None)
+
         db = _self._client[kwargs.get('db', 'ind320')]
-        collection = db[kwargs.get('table', 'elhub')]
+        collection = db[table]
+        
+        if not groups:
+            all_areas = _self.distinct(table=table, column='priceArea')
+            df_zeros = pd.DataFrame({
+                'priceArea': all_areas,
+                'mean': 0
+            })
+            return df_zeros.set_index('priceArea')
         
         timescale = kwargs.get('timescale', 'Monthly')
         month = kwargs.get('month', '2021-01')
@@ -104,31 +114,55 @@ class Mongo:
                 next_month = datetime(year + 1, 1, 1)
             else:
                 next_month = datetime(year, month + 1, 1)
-        elif timescale == 'Yearly':
+        elif timescale == 'Annual':
             year = int(year)
             start = datetime(year, 1, 1)
             next_month = datetime(year + 1, 1, 1)
+        elif timescale == 'Custom':
+            start = kwargs.get('start_time', None)
+            next_month = kwargs.get('end_time', None)
         
-        pipeline = [
-            {"$match": {
-                "startTime": {
-                    "$gte": start,
-                    "$lt": next_month
-                }
-            }},
-            {"$group": {
+        # --- Build the aggregation pipeline ---
+        pipeline = []
+        
+        # 1. Initial Match Stage (Time and optional Group filter)
+        match_stage = {"startTime": {"$gte": start, "$lt": next_month}}
+        if groups:
+            group_col = kwargs.get('column', 'consumptionGroup')
+            match_stage[group_col] = {"$in": groups if isinstance(groups, list) else [groups]}
+        
+        pipeline.append({"$match": match_stage})
+
+        # 2. Group by priceArea and calculate total quantity and unique days
+        pipeline.append({
+            "$group": {
                 "_id": "$priceArea",
-                "mean": {"$avg": "$quantityKwh"}
-            }},
-            {"$project": {
+                "totalQuantity": {"$sum": "$quantityKwh"},
+                "uniqueDays": {"$addToSet": {"$dateToString": {"format": "%Y-%m-%d", "date": "$startTime"}}}
+            }
+        })
+
+        # 3. Project the final result, calculating the mean daily value
+        pipeline.append({
+            "$project": {
                 "_id": 0,
                 "priceArea": "$_id",
-                "mean": 1
-            }},
-            {"$sort": {"priceArea": 1}}
-        ]
+                "mean": {
+                    "$cond": [
+                        {"$eq": [{"$size": "$uniqueDays"}, 0]}, # Avoid division by zero
+                        0,
+                        {"$divide": ["$totalQuantity", {"$size": "$uniqueDays"}]}
+                    ]
+                }
+            }
+        })
+
+        # 4. Final Sort
+        pipeline.append({"$sort": {"priceArea": 1}})
 
         res = list(collection.aggregate(pipeline))
+        if not res:
+            return pd.DataFrame() # Return empty DataFrame if no results
         return pd.DataFrame(res).set_index('priceArea')
 
     @st.cache_data
