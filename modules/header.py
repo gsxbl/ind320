@@ -178,37 +178,41 @@ class Header:
         '''
         Method to setup containers for header layout
         '''
-        self._c1, self._c2, self._c3 =st.columns([2, 2, 3])
+        self._c1, self._c2, self._c3 = st.columns([2, 2, 3])
     
     def render_header(self):
         '''
         Method to render the header components in the correct order
         to preserve logic and dependencies.    
         '''
-        with st.expander('Data Slicers', expanded=False):
-            self._setup_containers()
-
-            with self._c1:
-                self._setup_timescale_selector()
-            with self._c2:
+        with st.sidebar:
+            st.header('⚡ Data Explorer')
+            
+            # Section 1: Data Source Selection
+            with st.expander('📊 Data Source', expanded=True):
                 self._setup_table_selector()
-
+                self._setup_timescale_selector()
+            
+            # Fetch data based on source selection
             self._get_areas()
             self._get_groups()
             self._get_years()
             self._get_months()
             self._get_time_range()
             
-
-            with self._c1:
+            # Section 2: Geographic Selection
+            with st.expander('🗺️ Location', expanded=True):
                 self._setup_area_selector()
-
-            with self._c3:
-                # These selectors depend on the timescale and table.
+            
+            # Section 3: Temporal Selection
+            with st.expander('📅 Time Period', expanded=True):
                 if self._timescale == 'Monthly':
                     self._setup_month_selector()
                 elif self._timescale == 'Custom':
                     self._setup_time_range_selector()
                 else:
                     self._setup_year_selector()
+            
+            # Section 4: Data Categories
+            with st.expander('📈 Categories', expanded=True):
                 self._setup_group_selector()
