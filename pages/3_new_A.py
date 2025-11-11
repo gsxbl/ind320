@@ -15,7 +15,7 @@ class NewA:
     def __init__(self):
         # general page setup
         st.set_page_config(layout='wide')
-        SessionState()
+        self._state = SessionState()
         Header(group_options='single')
 
         # instantiate mongo client
@@ -26,12 +26,7 @@ class NewA:
         Load data from MongoDB based on session state.
         '''
         self._df = self._db.get_data(
-            timescale=st.session_state.timescale,
-            year=st.session_state.year,
-            month=st.session_state.month,
-            table=st.session_state.table,
-            start_time=st.session_state.start_time,
-            end_time=st.session_state.end_time,
+            **self._state.kwargs,
             index=['priceArea', st.session_state.column, 'startTime']
         )
 
@@ -41,10 +36,12 @@ class NewA:
         '''
         if st.session_state.timescale == 'Monthly':
             scale = st.session_state.month
-        else:
+        elif st.session_state.timescale == 'Annual':
             scale = st.session_state.year
+        else:
+            scale = f"{st.session_state.start_time.date()} to {st.session_state.end_time.date()}"
 
-        st.header(f'{st.session_state.column[:-5]} analysis for {scale}')
+        st.header(f'Energy {st.session_state.column[:-5].capitalize()} Analysis for {scale}')
         
     def _setup_tabs(self):
         '''

@@ -18,29 +18,34 @@ class Page4:
         st.set_page_config(layout='wide')
         
         # setup session state
-        SessionState()
-        Header()
+        self._state = SessionState()
+        with st.spinner('Loading...'):
+            Header()
 
         # instantiate client
         self._db = Mongo()
-        
-        # load dataframe from database
-        self._load_data()
-
 
     def _load_data(self):
         '''
         Load data from MongoDB based on session state.
         '''
         self._df = self._db.get_data(
-            timescale=st.session_state.timescale,
-            year=st.session_state.year,
-            month=st.session_state.month,
-            table=st.session_state.table,
-            start_time=st.session_state.start_time,
-            end_time=st.session_state.end_time,
+            **self._state.kwargs,
             index=['priceArea', st.session_state.column, 'startTime']
         )
+
+    def _setup_heading(self):
+        '''
+        Method to setup page heading
+        '''
+        if st.session_state.timescale == 'Monthly':
+            scale = st.session_state.month
+        elif st.session_state.timescale == 'Annual':
+            scale = st.session_state.year
+        else:
+            scale = f"{st.session_state.start_time.date()} to {st.session_state.end_time.date()}"
+
+        st.header(f'Energy {st.session_state.column[:-5].capitalize()} Charts for {scale}')
 
     def _setup_columns(self):
         '''
@@ -75,15 +80,6 @@ class Page4:
             rotation=180,
             )
         )
-        # dynamic title based on timescale
-        if st.session_state.timescale == 'Monthly':
-            fig.update_layout(
-                title=f'{st.session_state.column[:-5]} in {st.session_state.area} \
-                    [{st.session_state.month}] [%, TWh]')
-        else:
-            fig.update_layout(
-                title=f'{st.session_state.column[:-5]} in {st.session_state.area} \
-                    [{st.session_state.year}] [%, TWh]')
 
         st.plotly_chart(fig)
 
@@ -116,7 +112,6 @@ class Page4:
             fig.add_trace(trace)
 
         fig.update_layout(
-            title=f'{st.session_state.column[:-5]} in {st.session_state.area} [{scale}] [MWh]',
             yaxis=dict(
                 title=f'{st.session_state.column[:-5]} [MWh]'
             )
@@ -150,12 +145,15 @@ class Page4:
 
     def run(self):
         '''Main runtime method'''
-        
+        self._setup_heading()
+        self._load_data()
         self._setup_contents()
-        # except Exception as e:
-            # st.warning(f'An error occurred: {e}, please select Slicer one more time.')
+
 
 
 if __name__ == '__main__':
-    main = Page4()
-    main.run()
+    try:
+        main = Page4()
+        main.run()
+    except Exception as e:
+        st.warning(f'An error occurred: {e}')

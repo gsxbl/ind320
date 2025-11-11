@@ -12,7 +12,7 @@ class Header:
     
     It initializes the session state for the app.
     '''
-    def __init__(self, **kwargs):
+    def __init__(self, render=True, **kwargs):
         # Initialize session state
         self._state = SessionState()
         GeoPos()
@@ -21,8 +21,26 @@ class Header:
         self._db = Mongo()
         self._set_kwargs(**kwargs)
 
-        # render
-        self.render_header()
+        # Optionally render header UI
+        if render:
+            self.render_header()
+        else:
+            self.initialize()
+    
+    def initialize(self):
+        '''
+        Initialize all header variables and data without rendering UI.
+        Can be cached and used on the main page.
+        '''
+        # Fetch all required data
+        self._get_areas()
+        self._get_groups()
+        self._get_years()
+        self._get_months()
+        self._get_time_range()
+        
+        # Set current timescale value
+        self._timescale = st.session_state.timescale
     
     def _set_kwargs(self, **kwargs):
         '''
@@ -42,8 +60,8 @@ class Header:
         Method to get available productionGroups for
         frontend pills selector
         '''
-        col = 'productionGroup' if st.session_state.table == 'elhub' else 'consumptionGroup'
-        self._groups = self._db.distinct(column=col, table=st.session_state.table)
+        st.session_state.column = 'productionGroup' if st.session_state.table == 'elhub' else 'consumptionGroup'
+        self._groups = self._db.distinct(**self._state.kwargs)
 
     def _get_years(self):
         '''
@@ -74,14 +92,15 @@ class Header:
         frontend. Persist to streamlit session state.
         '''
         self._table = st.selectbox(
-            'Select data table', ['consumption', 'elhub'],
+            'Select data table', ['Consumption', 'Production'],
             index=['consumption', 'elhub'].index(st.session_state.table)
             )
 
-        st.session_state.table = self._table
-        if self._table == 'elhub':
+        if self._table == 'Production':
+            st.session_state.table = 'elhub'
             st.session_state.column = 'productionGroup'
         else:
+            st.session_state.table = 'consumption'
             st.session_state.column = 'consumptionGroup'
 
     def _setup_timescale_selector(self):
@@ -122,27 +141,28 @@ class Header:
 
     def _setup_time_range_selector(self):
         '''
-        Method to get time range selection from
-        frontend. Persist to streamlit session state.
+        Method to get time range selection from frontend.
+        Only updates session state when Execute button is clicked.
         '''
         start_val = st.session_state.get('start_time')
         end_val = st.session_state.get('end_time')
 
         if not start_val or start_val not in self._time_range:
             start_val = self._time_range[0]
-        # set start time to first value if not set
         if not end_val or end_val not in self._time_range:
             end_val = self._time_range[1]
 
-        # Use the validated values to render the slider.
-        self._start_time, self._end_time = st.select_slider(
+        # Render slider without updating state
+        start_time, end_time = st.select_slider(
             'Select time range',
             options=self._time_range,
             value=(start_val, end_val)
         )
-
-        st.session_state.start_time = self._start_time
-        st.session_state.end_time = self._end_time
+        # Execute button only updates state when clicked
+        if st.button('Execute', use_container_width=True):
+            st.session_state.start_time = start_time
+            st.session_state.end_time = end_time
+            st.rerun()
 
     def _setup_area_selector(self):
         '''
@@ -162,12 +182,11 @@ class Header:
         Method to get pill button selections from
         frontend
         '''
-        default = self._groups if self._group_options == 'multi' else self._groups[0]
 
         self._group = st.pills(
             f'Select {st.session_state.column}', self._groups,
             selection_mode=self._group_options,
-            default=default,
+            default=st.session_state.group if st.session_state.group else None,
         )
         if isinstance(self._group, str):
             self._group = [self._group]  # make it a list for consistency
@@ -186,10 +205,10 @@ class Header:
         to preserve logic and dependencies.    
         '''
         with st.sidebar:
-            st.header('⚡ Data Explorer')
+            st.header('⚡ Data Settings')
             
             # Section 1: Data Source Selection
-            with st.expander('📊 Data Source', expanded=True):
+            with st.expander('📊 Data Source', expanded=False):
                 self._setup_table_selector()
                 self._setup_timescale_selector()
             
@@ -201,11 +220,11 @@ class Header:
             self._get_time_range()
             
             # Section 2: Geographic Selection
-            with st.expander('🗺️ Location', expanded=True):
+            with st.expander('🗺️ Price Area', expanded=False):
                 self._setup_area_selector()
             
             # Section 3: Temporal Selection
-            with st.expander('📅 Time Period', expanded=True):
+            with st.expander('📅 Time Period', expanded=False):
                 if self._timescale == 'Monthly':
                     self._setup_month_selector()
                 elif self._timescale == 'Custom':
@@ -214,5 +233,7 @@ class Header:
                     self._setup_year_selector()
             
             # Section 4: Data Categories
-            with st.expander('📈 Categories', expanded=True):
+            with st.expander('📈 {} Categories'.format(
+                st.session_state.column[:-5].capitalize()),
+                             expanded=False):
                 self._setup_group_selector()

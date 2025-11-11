@@ -1,5 +1,6 @@
 """Module to handle API requests with caching."""
 import openmeteo_requests
+from datetime import datetime
 import pandas as pd
 import requests
 import streamlit as st
@@ -46,6 +47,11 @@ class OpenMeteo:
         kwargs['models'] = kwargs.get('models', 'era5')
         kwargs['wind_speed_unit'] = kwargs.get('wind_speed_unit', 'ms')
         
+        if isinstance(kwargs['start_date'], datetime):
+            kwargs['start_date'] = kwargs['start_date'].strftime('%Y-%m-%d')
+        if isinstance(kwargs['end_date'], datetime):
+            kwargs['end_date'] = kwargs['end_date'].strftime('%Y-%m-%d')
+
         # Make API call
         response = _self._client.weather_api(url, params=kwargs)[0].Hourly()
         
@@ -62,5 +68,5 @@ class OpenMeteo:
         # Populate data for each hourly variable
         for i, kind in enumerate(kwargs.get("hourly", [])):
             data[kind] = response.Variables(i).ValuesAsNumpy()
-        
+            
         return pd.DataFrame(data).set_index('date')

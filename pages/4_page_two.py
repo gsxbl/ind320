@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 from modules.api import OpenMeteo
 from modules.geo import GeoPos
+from modules.header import Header
 from modules.session import SessionState
 
 class Page2:
@@ -15,7 +16,8 @@ class Page2:
     def __init__(self):
         # general page setup
         st.set_page_config(layout='wide')
-        SessionState()
+        self._state = SessionState()
+        Header()
 
         # instantiate and cache data
         self._api = OpenMeteo()
@@ -27,16 +29,23 @@ class Page2:
         '''
         
         st.header(f'Weather Data for {(st.session_state.city)}')
+        if st.session_state.timescale == 'Custom':
+            st.subheader(
+                f'Period: {st.session_state.start_time} to {st.session_state.end_time}')
         st.subheader(f'Period: {st.session_state.month}')
 
     ### LINE CHART COLUMN HELPER ###
     def agg_month(self, df:pd.DataFrame, month:str):
         '''
-        Method to aggregate dataframe by month.
+        Method to group dataframe by month.
         '''
-        df = df.loc[month]
-        df = df.groupby(df.index.month).agg(list)
-        df.index.name = 'Month'
+        if st.session_state.timescale == 'Custom':
+            return df
+        
+        y, m = month.split('-')
+        # the index is in datetime format, plot each
+        df = df[(df.index.year == int(y)) & (df.index.month == int(m))]
+
         return df
 
     # --- PAGE CONTENTS ---
@@ -49,17 +58,19 @@ class Page2:
 
         # get weather data
         self._df = self._api.get_weather_data(
-            **self._loc(st.session_state.area),
+            **self._state.kwargs
         )
         # aggregate data by month
         df = self.agg_month(self._df, st.session_state.month)
-
-        # set configuration for linecharts within Dataframe
+        # iterate each column and plot values as linechart
         for col in df.columns:
+            # Create dataframe with single column containing list of values
+            chart_df = pd.DataFrame({col: [df[col].values]})
             col_cfg = st.column_config.LineChartColumn(col)
             
             # render to frontend
-            st.dataframe(df[col], column_config={col:col_cfg})
+            st.dataframe(chart_df, column_config={col: col_cfg}, 
+                         hide_index=True)
         
     def run(self):
         self.setup_contents()

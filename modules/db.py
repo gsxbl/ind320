@@ -75,15 +75,12 @@ class Mongo:
             }
 
         elif timescale == 'Custom':
-            start = kwargs.get('start_time', start_time)
-            end = kwargs.get('end_time', end_time)
-            if start and end:
-                query = {
-                    'startTime': {
-                        '$gte': start,
-                        '$lte': end
-                    }
+            query = {
+                'startTime': {
+                    '$gte': start_time,
+                    '$lte': end_time
                 }
+            }
         return _self.find(query=query, **kwargs)
     
     @st.cache_data(ttl=600)
