@@ -11,6 +11,7 @@ dev.ipynb
 **/*.html
 **/*.env
 **/*.png
+**/*repl.py
 
 # VSC stuff
 **/*pycache*
