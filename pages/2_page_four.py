@@ -89,11 +89,15 @@ class Page4:
         and adds their contents to a plotly graph object.
         Method renders the figure to frontend using cached data.
         '''
+        if not st.session_state.group:
+            st.warning('Please select at least one {} group to plot line chart.'.format(
+                st.session_state.column[:-5].capitalize()))
+            return
         # instantiate figure
         fig = go.Figure()
         
-        S = st.session_state.timescale[0]
-        scale = st.session_state.month if S == 'M' else st.session_state.year
+        # S = st.session_state.timescale[0]
+        # scale = st.session_state.month if S == 'M' else st.session_state.year
         
         # iterate groups and add traces
         for group in st.session_state.group:
@@ -152,8 +156,8 @@ class Page4:
 
 
 if __name__ == '__main__':
-    try:
-        main = Page4()
-        main.run()
-    except Exception as e:
-        st.warning(f'An error occurred: {e}')
+    
+    main = Page4()
+    main.run()
+    # except Exception as e:
+    #     st.warning(f'An error occurred: {e}')

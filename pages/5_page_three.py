@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 
 from modules.api import OpenMeteo
 from modules.geo import GeoPos
+from modules.header import Header
 from modules.session import SessionState
 
 class Page3:
@@ -14,11 +15,12 @@ class Page3:
     making them accessible to all methods.
     '''
     def __init__(self):
-        # setup session state
-        SessionState()
-
         # general page setup
         st.set_page_config(layout='wide')
+        
+        # setup session state
+        self._state = SessionState()
+        Header()
 
         # instantiate and cache data
         self._api = OpenMeteo()
@@ -34,7 +36,7 @@ class Page3:
         to the self._df property.
         '''
         self._df = self._api.get_weather_data(
-            **self._loc(st.session_state.area),
+            **self._state.kwargs
         )
         
     def _get_months(self):

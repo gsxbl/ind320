@@ -16,7 +16,7 @@ class NewA:
         # general page setup
         st.set_page_config(layout='wide')
         self._state = SessionState()
-        Header(group_options='single')
+        Header()
 
         # instantiate mongo client
         self._db = Mongo()
@@ -25,6 +25,9 @@ class NewA:
         '''
         Load data from MongoDB based on session state.
         '''
+        if not st.session_state.group:
+            st.warning('Please select at least one group to load data.')
+            return
         self._df = self._db.get_data(
             **self._state.kwargs,
             index=['priceArea', st.session_state.column, 'startTime']
@@ -104,10 +107,6 @@ class NewA:
         '''
         Method to plot STL analysis using cached data
         '''
-        if not st.session_state.group:
-            st.warning('Please select at least one production group to plot STL analysis.')
-            return
-        
         fig = plot_STL(
             self._df,
             st.session_state.area,

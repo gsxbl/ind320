@@ -1,6 +1,6 @@
 """module to manage session state variables in Streamlit."""
 import streamlit as st
-import datetime
+from datetime import datetime, date
 from .geo import GeoPos
 
 class SessionState:
@@ -23,16 +23,16 @@ class SessionState:
             st.session_state.group = []
 
         if 'month' not in st.session_state:
-            st.session_state.month = '2022-01'
+            st.session_state.month = datetime(2022, 1, 1)
 
         if 'year' not in st.session_state:
-            st.session_state.year = '2022'
+            st.session_state.year = datetime(2022, 1, 1)
 
         if 'start_time' not in st.session_state:
-            st.session_state.start_time = datetime.datetime(2022, 1, 1, 0, 0, 0)
+            st.session_state.start_time = datetime(2022, 1, 1, 0, 0, 0)
 
         if 'end_time' not in st.session_state:
-            st.session_state.end_time = datetime.datetime(2022, 2, 1, 0, 0, 0)
+            st.session_state.end_time = datetime(2022, 2, 1, 0, 0, 0)
 
         if 'timescale' not in st.session_state:
             st.session_state.timescale = 'Monthly'
@@ -55,11 +55,11 @@ class SessionState:
         if 'kind' not in st.session_state:
             st.session_state.kind = 'temperature_2m'
 
-        if 'latitude' not in st.session_state:
-            st.session_state.latitude = st.session_state.geo['latitude']
+        # if 'latitude' not in st.session_state:
+        #     st.session_state.latitude = st.session_state.geo['latitude']
         
-        if 'longitude' not in st.session_state:
-            st.session_state.longitude = st.session_state.geo['longitude']
+        # if 'longitude' not in st.session_state:
+        #     st.session_state.longitude = st.session_state.geo['longitude']
 
         ### SNOW ANALYSIS PARAMETERS ###
         if 'T' not in st.session_state:
@@ -78,6 +78,23 @@ class SessionState:
         st.session_state.geo = self._geo(area_code)
         st.session_state.nve_code = self._geo._locations[area_code]['nve_code']
 
+    def update_datetimes(self, dt_object):
+        """Update datetime-related session state variables."""
+        y, m, d = dt_object.year, dt_object.month, dt_object.day
+
+        if st.session_state.timescale == 'Annual':
+            st.session_state.start_time = datetime(y, 1, 1, 0, 0, 0)
+            st.session_state.end_time = datetime(y + 1, 1, 1, 0, 0, 0)
+        elif st.session_state.timescale == 'Monthly':
+            st.session_state.start_time = datetime(y, m, 1, 0, 0, 0)
+            if m == 12:
+                st.session_state.end_time = datetime(y + 1, 1, 1, 0, 0, 0)
+            else:
+                st.session_state.end_time = datetime(y, m + 1, 1, 0, 0, 0)
+
+        st.session_state.year = datetime(y, 1, 1)
+        st.session_state.month = datetime(y, m, 1)
+
     def _return_kwargs(self):
         """Return current session state as keyword arguments."""
         return {
@@ -94,8 +111,8 @@ class SessionState:
             'end_time': st.session_state.end_time,
             'timescale': st.session_state.timescale,
             'column': st.session_state.column,
-            'latitude': st.session_state.latitude,
-            'longitude': st.session_state.longitude,
+            'latitude': st.session_state.geo['latitude'],
+            'longitude': st.session_state.geo['longitude'],
             'start_date': st.session_state.start_time.date().strftime('%Y-%m-%d'),
             'end_date': st.session_state.end_time.date().strftime('%Y-%m-%d'),
             'T': st.session_state.T,

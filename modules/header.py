@@ -126,6 +126,7 @@ class Header:
             )
 
         st.session_state.year = self._year
+        self._state.update_datetimes(self._year)
 
     def _setup_month_selector(self):
         '''
@@ -138,6 +139,7 @@ class Header:
             )
 
         st.session_state.month = self._month
+        self._state.update_datetimes(self._month)
 
     def _setup_time_range_selector(self):
         '''
@@ -182,16 +184,19 @@ class Header:
         Method to get pill button selections from
         frontend
         '''
+        default = st.session_state.group if st.session_state.group else self._groups
 
         self._group = st.pills(
             f'Select {st.session_state.column}', self._groups,
             selection_mode=self._group_options,
-            default=st.session_state.group if st.session_state.group else None,
+            default=default,
         )
         if isinstance(self._group, str):
             self._group = [self._group]  # make it a list for consistency
-            
-        st.session_state.group = self._group
+
+        if st.button('Apply', width='stretch'):
+            st.session_state.group = self._group
+            st.rerun()
 
     def _setup_containers(self):
         '''
