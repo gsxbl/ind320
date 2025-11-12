@@ -80,7 +80,7 @@ class SessionState:
 
     def update_datetimes(self, dt_object):
         """Update datetime-related session state variables."""
-        y, m, d = dt_object.year, dt_object.month, dt_object.day
+        y, m = dt_object.year, dt_object.month
 
         if st.session_state.timescale == 'Annual':
             st.session_state.start_time = datetime(y, 1, 1, 0, 0, 0)

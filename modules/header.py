@@ -202,43 +202,52 @@ class Header:
         '''
         Method to setup containers for header layout
         '''
-        self._c1, self._c2, self._c3 = st.columns([2, 2, 3])
+        self._c1, self._c2, self._c3, self._c4 = st.columns([1,1,1,1])
     
     def render_header(self):
         '''
         Method to render the header components in the correct order
-        to preserve logic and dependencies.    
+        to preserve logic and dependencies. 
+        Logic test for future dynamic rendering.   
         '''
-        with st.sidebar:
-            st.header('⚡ Data Settings')
+        self._setup_containers()
+
+        with self._c1:
+            # st.header('⚡ Data Settings')
             
             # Section 1: Data Source Selection
             with st.expander('📊 Data Source', expanded=False):
-                self._setup_table_selector()
+                if True:
+                    self._setup_table_selector()
                 self._setup_timescale_selector()
-            
+
             # Fetch data based on source selection
-            self._get_areas()
-            self._get_groups()
-            self._get_years()
-            self._get_months()
-            self._get_time_range()
-            
+        self._get_areas()
+        self._get_groups()
+        self._get_years()
+        self._get_months()
+        self._get_time_range()
+
+        with self._c2:
             # Section 2: Geographic Selection
-            with st.expander('🗺️ Price Area', expanded=False):
-                self._setup_area_selector()
-            
+            if True:
+                with st.expander('🗺️ Price Area', expanded=False):
+                    self._setup_area_selector()
+
+        with self._c3:
             # Section 3: Temporal Selection
-            with st.expander('📅 Time Period', expanded=False):
-                if self._timescale == 'Monthly':
-                    self._setup_month_selector()
-                elif self._timescale == 'Custom':
-                    self._setup_time_range_selector()
-                else:
-                    self._setup_year_selector()
-            
+            if True:
+                with st.expander('📅 Time Period', expanded=False):
+                    if self._timescale == 'Monthly':
+                        self._setup_month_selector()
+                    elif self._timescale == 'Custom':
+                        self._setup_time_range_selector()
+                    else:
+                        self._setup_year_selector()
+        with self._c4:
             # Section 4: Data Categories
-            with st.expander('📈 {} Categories'.format(
-                st.session_state.column[:-5].capitalize()),
-                             expanded=False):
-                self._setup_group_selector()
+            if True:
+                with st.expander('📈 {} Categories'.format(
+                    st.session_state.column[:-5].capitalize()),
+                                expanded=False):
+                    self._setup_group_selector()

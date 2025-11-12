@@ -9,7 +9,7 @@ from modules.db import Mongo
 class MapApp:
     def __init__(self):
         # initial setup
-        SessionState()
+        self._state = SessionState()
         Header()
         
         st.set_page_config(
@@ -32,17 +32,10 @@ class MapApp:
         Load data from MongoDB based on session state.
         '''
         self._df = self._db.mean_by_area(
-            timescale=st.session_state.timescale,
-            groups=st.session_state.group,
-            column=st.session_state.column,
-            year=st.session_state.year,
-            month=st.session_state.month,
-            table=st.session_state.table,
-            start_time=st.session_state.start_time,
-            end_time=st.session_state.end_time,
+            **self._state.kwargs,
             index=['priceArea', st.session_state.column, 'startTime']
         )
-
+        
         self._data = self._df['mean'].to_dict()
         self._df.reset_index(inplace=True)
 

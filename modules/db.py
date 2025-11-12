@@ -82,12 +82,13 @@ class Mongo:
     @st.cache_data(ttl=600)
     def mean_by_area(_self, **kwargs):
         table = kwargs.get('table', 'elhub')
-        groups = kwargs.get('groups', None)
+        group = kwargs.get('group', None)
 
         db = _self._client[kwargs.get('db', 'ind320')]
         collection = db[table]
-        
-        if not groups:
+
+        if not group:
+            st.write('No groups selected, returning zeros dataframe.')
             all_areas = _self.distinct(table=table, column='priceArea')
             df_zeros = pd.DataFrame({
                 'priceArea': all_areas,
@@ -101,29 +102,27 @@ class Mongo:
 
         # build date range query
         if timescale == 'Monthly':
-            year, month = map(int, month.split('-'))
-            start = datetime(year, month, 1)
-            if month == 12:
-                next_month = datetime(year + 1, 1, 1)
+            start = month
+            if month.month == 12:
+                stop = datetime(month.year + 1, 1, 1)
             else:
-                next_month = datetime(year, month + 1, 1)
+                stop = datetime(month.year, month.month + 1, 1)
         elif timescale == 'Annual':
-            year = int(year)
-            start = datetime(year, 1, 1)
-            next_month = datetime(year + 1, 1, 1)
-        elif timescale == 'Custom':
+            start = year
+            stop = datetime(year.year + 1, 1, 1)
+        else:
             start = kwargs.get('start_time', None)
-            next_month = kwargs.get('end_time', None)
-        
+            stop = kwargs.get('end_time', None)
+
         # --- Build the aggregation pipeline ---
         pipeline = []
         
         # 1. Initial Match Stage (Time and optional Group filter)
-        match_stage = {"startTime": {"$gte": start, "$lt": next_month}}
-        if groups:
+        match_stage = {"startTime": {"$gte": start, "$lt": stop}}
+        if group:
             group_col = kwargs.get('column', 'consumptionGroup')
-            match_stage[group_col] = {"$in": groups if isinstance(groups, list) else [groups]}
-        
+            match_stage[group_col] = {"$in": group if isinstance(group, list) else [group]}
+
         pipeline.append({"$match": match_stage})
 
         # 2. Group by priceArea and calculate total quantity and unique days

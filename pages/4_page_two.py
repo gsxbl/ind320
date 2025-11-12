@@ -57,14 +57,12 @@ class Page2:
             **self._state.kwargs
         )
         # aggregate data by month
-        self._df.shape
         df = self.agg_month(self._df)
         # iterate each column and plot values as linechart
         for col in df.columns:
             # Create dataframe with single column containing list of values
             chart_df = pd.DataFrame({col: [df[col].values]})
             col_cfg = st.column_config.LineChartColumn(col)
-            st.write(len(chart_df.iloc[0,0]), 24*31)
             
             # render to frontend
             st.dataframe(chart_df, column_config={col: col_cfg}, 

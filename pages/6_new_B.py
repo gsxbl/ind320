@@ -1,5 +1,6 @@
+from altair import Header
 import streamlit as st
-import modules
+from modules.header import Header
 from modules.session import SessionState
 
 from modules.api import OpenMeteo
@@ -17,7 +18,8 @@ class NewB:
     def __init__(self):
         # general page setup
         st.set_page_config(layout='wide')
-        SessionState()
+        self._state = SessionState()
+        Header()
 
         # instantiate and cache data
         self._api = OpenMeteo()
@@ -35,7 +37,8 @@ class NewB:
         selected area in session state
         '''
         self._df = self._api.get_weather_data(
-            **self._loc(st.session_state.area))
+            **self._state.kwargs
+        )
 
     def _setup_selector(self):
         '''
@@ -83,6 +86,15 @@ class NewB:
             self.n_neighbors = st.number_input(
                 'Number of Neighbors', value=3, key='n_neighbors')
 
+    def _display_stats(self, df):
+        '''
+        Method to display statistics of the data
+        '''
+        with st.expander('📊 Show Statistics'):
+            # print dataframe summary as strings
+            d = df.describe()
+            for col in d.index:
+                st.markdown(f'### {col}: **{d[col]:.2f}**')
     # --- PAGE CONTENTS ---
     def setup_contents(self):
         '''Method to setup page contents in tabs'''
@@ -96,8 +108,9 @@ class NewB:
                                             k=self._k)
             # render plotly figure
             st.plotly_chart(fig)
-            st.dataframe(self._outliers.describe().T, width=200)
-        
+            # display table of outliers
+            self._display_stats(self._outliers)
+
         # use tab two
         with self.t2:
             self._setup_lof_ui()
@@ -106,7 +119,9 @@ class NewB:
                                             n_neighbors=self.n_neighbors)
             # render plotly figure
             st.plotly_chart(fig)
-            st.dataframe(self._anomalies.describe().T, width=200)
+            # display table of anomalies
+            self._display_stats(self._anomalies)
+
 
     def run(self):
         self._set_header()

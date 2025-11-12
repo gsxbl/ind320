@@ -55,3 +55,15 @@ class GeoPos:
         '''Method to get city name from area code'''
         loc = self._locations.get(area_code)
         return loc['city'] if loc else None
+
+    def area_code(self, city_name):
+        '''Method to get area code from city name'''
+        for code, info in self._locations.items():
+            if info['city'] == city_name:
+                return code
+        return None
+
+    @property
+    def citys(self):
+        '''Method to get list of all city names'''
+        return [info['city'] for info in self._locations.values()]
