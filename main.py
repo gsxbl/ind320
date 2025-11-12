@@ -31,7 +31,7 @@ pages_structure = {
         ("Analysis B", "pages/6_new_B.py"),
     ],
     "❄️ Snow": [
-        ("Snow Analysis", "pages/9_snow.py"),
+        ("Snow Analysis", "pages/8_snow.py"),
     ],
     "🗺️ Maps & Analysis": [
         ("Map Visualization", "pages/1_map.py"),
@@ -39,7 +39,7 @@ pages_structure = {
         ("Analysis A", "pages/3_new_A.py"),
     ],
     "🔧 Utilities": [
-        ("REPL", "pages/8_repl.py"),
+        ("REPL", "pages/9_repl.py"),
         ("Page Five", "pages/7_page_five.py"),
     ],
 }
