@@ -47,6 +47,7 @@ class Header:
         Method to set any kwargs passed to the class
         '''
         self._group_options = kwargs.get('group_options', 'multi')
+        self._choices = kwargs.get('choices', {})
 
     def _get_areas(self):
         '''
@@ -91,6 +92,7 @@ class Header:
         Method to get table selection from
         frontend. Persist to streamlit session state.
         '''
+        previous_table = st.session_state.table
         self._table = st.selectbox(
             'Select data table', ['Consumption', 'Production'],
             index=['consumption', 'elhub'].index(st.session_state.table)
@@ -102,6 +104,9 @@ class Header:
         else:
             st.session_state.table = 'consumption'
             st.session_state.column = 'consumptionGroup'
+
+        if st.session_state.table != previous_table:
+            st.session_state.group = []
 
     def _setup_timescale_selector(self):
         '''
@@ -122,7 +127,8 @@ class Header:
         '''
         self._year = st.selectbox(
             'Select year', self._years,
-            index=self._years.index(st.session_state.year)
+            index=self._years.index(st.session_state.year),
+            format_func=lambda dt: dt.strftime('%Y')
             )
 
         st.session_state.year = self._year
@@ -135,7 +141,8 @@ class Header:
         '''
         self._month = st.selectbox(
             'Select month', self._months,
-            index=self._months.index(st.session_state.month)
+            index=self._months.index(st.session_state.month),
+            format_func=lambda dt: dt.strftime('%B')
             )
 
         st.session_state.month = self._month
@@ -185,6 +192,7 @@ class Header:
         frontend
         '''
         default = st.session_state.group if st.session_state.group else self._groups
+        st.write(default)
 
         self._group = st.pills(
             f'Select {st.session_state.column}', self._groups,
@@ -194,9 +202,7 @@ class Header:
         if isinstance(self._group, str):
             self._group = [self._group]  # make it a list for consistency
 
-        if st.button('Apply', width='stretch'):
-            st.session_state.group = self._group
-            st.rerun()
+        st.session_state.group = self._group
 
     def _setup_containers(self):
         '''
@@ -214,10 +220,10 @@ class Header:
 
         with self._c1:
             # st.header('⚡ Data Settings')
-            
+            header = '📊 Data Source' if self._choices.get('source', True) else '⚖️ Time Scale'
             # Section 1: Data Source Selection
-            with st.expander('📊 Data Source', expanded=False):
-                if True:
+            with st.expander(header, expanded=False):
+                if self._choices.get('source', True):
                     self._setup_table_selector()
                 self._setup_timescale_selector()
 
@@ -230,13 +236,13 @@ class Header:
 
         with self._c2:
             # Section 2: Geographic Selection
-            if True:
+            if self._choices.get('area', True):
                 with st.expander('🗺️ Price Area', expanded=False):
                     self._setup_area_selector()
 
         with self._c3:
             # Section 3: Temporal Selection
-            if True:
+            if self._choices.get('time', True):
                 with st.expander('📅 Time Period', expanded=False):
                     if self._timescale == 'Monthly':
                         self._setup_month_selector()
@@ -246,7 +252,7 @@ class Header:
                         self._setup_year_selector()
         with self._c4:
             # Section 4: Data Categories
-            if True:
+            if self._choices.get('group', True):
                 with st.expander('📈 {} Categories'.format(
                     st.session_state.column[:-5].capitalize()),
                                 expanded=False):
