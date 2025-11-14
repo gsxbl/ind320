@@ -192,7 +192,6 @@ class Header:
         frontend
         '''
         default = st.session_state.group if st.session_state.group else self._groups
-        st.write(default)
 
         self._group = st.pills(
             f'Select {st.session_state.column}', self._groups,
