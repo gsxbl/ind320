@@ -55,12 +55,6 @@ class SessionState:
         if 'kind' not in st.session_state:
             st.session_state.kind = 'temperature_2m'
 
-        # if 'latitude' not in st.session_state:
-        #     st.session_state.latitude = st.session_state.geo['latitude']
-        
-        # if 'longitude' not in st.session_state:
-        #     st.session_state.longitude = st.session_state.geo['longitude']
-
         ### SNOW ANALYSIS PARAMETERS ###
         if 'T' not in st.session_state:
             st.session_state.T = 3000
@@ -70,6 +64,10 @@ class SessionState:
 
         if 'theta' not in st.session_state:
             st.session_state.theta = 0.5
+
+        ### MAP PARAMETERS ###
+        if 'last_clicked' not in st.session_state:
+            st.session_state.last_clicked = (0, 0)
 
     def update_area(self, area_code):
         """Update area-related session state variables."""
