@@ -10,7 +10,10 @@ class Snow:
         # initial setup
         st.set_page_config(layout='wide')
         self._state = SessionState()
-        Header()
+        Header(choices={
+            'group': False,
+            'source': False
+        })
     
         # instantiate client
         self._api = OpenMeteo()
@@ -20,15 +23,16 @@ class Snow:
         # Overall statistics metric
         # Seasonal analysis (rotated) and wind rose in same row
         col1, col2 = st.columns([1, 1])
+        period = f": {self._state.kwargs['start_date']} - {self._state.kwargs['end_date']}"
         
         with col1:
-            st.subheader("📊 Overall Statistics")
+            st.subheader(f"📊 {st.session_state.city} {period}")
             st.metric(
                 "Overall Average Qt",
                 f"{results['overall_avg_tonnes']:.1f} tonnes/m"
             )
             
-            st.subheader("📈 Seasonal Analysis")
+            st.subheader(f"📈 Fence Recommendations")
             combined_df = results['yearly_summary']
             fence_df = results['fence_results']
             
