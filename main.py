@@ -2,76 +2,117 @@ import streamlit as st
 from modules.session import SessionState
 from modules.header import Header
 
-# Page configuration
-st.set_page_config(
-    page_title='IND320 Streamlit App',
-    layout='wide'
-)
 
-# Initialize session state and header
-SessionState()
-with st.spinner('Loading...'):
-    Header(render=False)
+class Main:
+    """Main landing page wrapped in a class for consistency."""
 
-# Define home page
-def home():
-    st.title('Welcome to the IND320 Streamlit Application!')
-    st.markdown("""
-    This application provides various data visualizations and analyses
-    based on energy consumption, production, weather data, and snow drift analysis.
-    
-    Use the sidebar to navigate between different pages and customize your data selections.
-    """)
+    def __init__(self):
+        self._configure_page()
+        SessionState()
+        with st.spinner('Loading...'):
+            Header(render=False)
 
-# Define pages structure with tuples (title, path)
-pages_structure = {
-    "📊 Data": [
-        ("Weather Data", "pages/4_page_two.py"),
-        ("Page Three", "pages/5_page_three.py"),
-        ("Analysis B", "pages/6_new_B.py"),
-    ],
-    "❄️ Snow": [
-        ("Snow Analysis", "pages/8_snow.py"),
-    ],
-    "🗺️ Maps & Analysis": [
-        ("Map Visualization", "pages/1_map.py"),
-        ("Charts", "pages/2_charts.py"),
-        ("Analysis A", "pages/3_new_A.py"),
-    ],
-    "🔧 Utilities": [
-        ("REPL", "pages/9_repl.py"),
-        ("Page Five", "pages/7_page_five.py"),
-    ],
-}
+        self._pages_structure = {
+            "📊 Wheather": [
+                ("Line Chart Columns", "pages/4_line_chart.py"),
+                ("Historical", "pages/5_historical.py"),
+                ("Anomaly analysis", "pages/6_anomalies.py"),
+            ],
+            "❄️ Snow": [
+                ("Snow Analysis", "pages/8_snow.py"),
+            ],
+            "🗺️ Energy": [
+                ("Map Visualization", "pages/1_map.py"),
+                ("Charts", "pages/2_charts.py"),
+                ("Frequency Analysis", "pages/3_frequency_analysis.py"),
+            ],
+            "🔧 Utilities": [
+                ("Settings", "pages/10_settings.py"),
+                ("REPL", "pages/9_repl.py"),
+                ("Droids", "pages/7_page_five.py"),
+            ],
+        }
 
-# Build pages dict for st.navigation
-pages = {group: [st.Page(path, title=title) for title, path in pages_list] 
-         for group, pages_list in pages_structure.items()}
+        self._pages = self._create_pages()
+        self._home_page = st.Page(self._home, title="Home")
 
-# Hide default navigation with CSS
-st.markdown("""
-<style>
-    [data-testid="stSidebarNav"] {
-        display: none;
-    }
-</style>
-""", unsafe_allow_html=True)
+    def _configure_page(self):
+        title = st.session_state.get('app_title', 'IND320 Streamlit App')
+        layout = st.session_state.get('app_layout', 'wide')
+        sidebar_state = st.session_state.get('app_sidebar', 'auto')
+        st.set_page_config(
+            page_title=title,
+            layout=layout,
+            initial_sidebar_state=sidebar_state
+        )
 
-# Create navigation with expandable groups in sidebar
-with st.sidebar:
-    st.markdown("### 🧭 Navigation")
-    
-    if st.button("🏠 Home", use_container_width=True):
-        st.switch_page(st.Page(home, title="Home"))
-    
-    st.divider()
-    
-    for group_name, pages_list in pages_structure.items():
-        with st.expander(group_name, expanded=False):
-            for page_title, page_path in pages_list:
-                if st.button(page_title, use_container_width=True, key=f"nav_{page_path}"):
-                    st.switch_page(st.Page(page_path, title=page_title))
+    def _create_pages(self):
+        pages = {}
+        for group, items in self._pages_structure.items():
+            pages[group] = [st.Page(path, title=title) for title, path in items]
+        return pages
 
-# Create navigation (required for st.switch_page to work)
-nav = st.navigation([st.Page(home, title="Home")] + [page for pages_list in pages.values() for page in pages_list])
-nav.run()
+    def _home(self):
+        st.title(f'Welcome to the {st.session_state.get("app_title", "IND320 Streamlit App")} Application!')
+        st.markdown(
+            """
+            This application provides various data visualizations and analyses
+            based on energy consumption, production, weather data, and snow drift analysis.
+            
+            Mainly created by the author, with help from
+            - GPT-5.1-Codex
+            - Claude Haiku 4.5
+            - Gemini 2.5 Pro.
+            
+            Some code snippets and ideas were heavily inspired by the
+            [IND320 course material](https://khliland.github.io/IND320/0_General/Introduction.html).
+
+            Code structure and layout by author.
+            Certain rearrangements and refactoring assisted by AI.
+
+            ### Use the 
+            ##  <- sidebar
+            ### to navigate between different pages and customize your data selections.
+            """
+        )
+
+    def _hide_default_nav(self):
+        st.markdown(
+            """
+            <style>
+                [data-testid="stSidebarNav"] {
+                    display: none;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+    def _render_sidebar(self):
+        with st.sidebar:
+            st.markdown("### 🧭 Navigation")
+
+            if st.button("🏠 Home", use_container_width=True):
+                st.switch_page(self._home_page)
+
+            st.divider()
+
+            for group_name, items in self._pages_structure.items():
+                with st.expander(group_name, expanded=False):
+                    for (title, path), page in zip(items, self._pages[group_name]):
+                        if st.button(title, use_container_width=True, key=f"nav_{path}"):
+                            st.switch_page(page)
+
+    def _all_pages(self):
+        return [page for group in self._pages.values() for page in group]
+
+    def run(self):
+        self._hide_default_nav()
+        self._render_sidebar()
+        nav = st.navigation([self._home_page] + self._all_pages())
+        nav.run()
+
+
+if __name__ == '__main__':
+    main = Main()
+    main.run()
