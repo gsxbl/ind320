@@ -59,10 +59,23 @@ class NewA:
         and defaults to a quarter of the data scale - if data length is one year
         default is 24 * 7 * 4, if data length is one month default is 24.
         '''
-        if st.session_state.timescale == 'Yearly':
-            default_period = 24 * 7 * 4  # roughly a month
-        else:
-            default_period = 24  # daily
+        if st.session_state.timescale == 'Annual':
+            period = '24 * 7 * 4'
+            default_period = eval(period)
+        elif st.session_state.timescale == 'Monthly':
+            period = '24'
+            default_period = eval(period)
+        elif st.session_state.timescale == 'Custom':
+            data_length = (st.session_state.end_time - st.session_state.start_time).days
+            if data_length >= 365:
+                period = '24 * 7 * 4'
+                default_period = eval(period)
+            elif data_length >= 30:
+                period = '24'
+                default_period = eval(period)
+            else:
+                period = str(max(4, data_length // 4))
+                default_period = eval(period)
 
 
         with st.expander('STL Settings'):
