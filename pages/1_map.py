@@ -22,6 +22,10 @@ class MapApp:
         self._geo = self._load_geojson()
         self._mutate_geojson()
 
+    def _setup_header(self):
+        st.header('Energy Map Visualization')
+        st.subheader(f'Period: {st.session_state.start_time.date()} to {st.session_state.end_time.date()}')
+
     @st.cache_data
     def _load_geojson(_self):
         """Load GeoJSON data for map visualization."""
@@ -76,23 +80,26 @@ class MapApp:
             legend_name='Mean Value (TWh)',
         ).add_to(self._m)
 
-        # outline ElSpotOmr == st.session_state.area
-        folium.GeoJson(
-            data={
-                "type": "FeatureCollection",
-                "features": [
-                    feature for feature in self._geo['features']
-                    if feature['properties']['ElSpotOmr'] == st.session_state.area
-                ]
-            },
-            style_function=lambda feature: {
-                'fillColor': 'blue',
-                'color': 'pink',
-                'weight': 3,
-                'dashArray': '5, 5'
-            },
-            name='Selected Area Outline',
-        ).add_to(self._m)
+        if not st.session_state.selection:
+            return
+        else:
+            # outline ElSpotOmr == sel
+            folium.GeoJson(
+                data={
+                    "type": "FeatureCollection",
+                    "features": [
+                        feature for feature in self._geo['features']
+                        if feature['properties']['ElSpotOmr'] == st.session_state.area
+                    ]
+                },
+                style_function=lambda feature: {
+                    'fillColor': 'black',
+                    'color': 'black',
+                    'weight': 3,
+                    'dashArray': '5, 5'
+                },
+                name='Selected Area Outline',
+            ).add_to(self._m)
 
     def _render_map(self):
         """Render map visualization using loaded GeoJSON and data."""
@@ -106,7 +113,8 @@ class MapApp:
         """Show selection info next to the map."""
         with self._c2:
             st.subheader('Selection')
-            st.write(f"priceArea: {st.session_state.area}")
+            area = st.session_state.area
+            st.write(f"priceArea: {area or 'n/a'}")
 
             lat, lon = st.session_state.last_clicked
             if (lat, lon) == (0, 0):
@@ -114,8 +122,12 @@ class MapApp:
             else:
                 st.write(f"clicked location: {lat:.4f}, {lon:.4f}")
 
-            mean = self._df.loc[self._df['priceArea'] == st.session_state.area, 'mean']
-            if not mean.empty:
+            if area:
+                mean = self._df.loc[self._df['priceArea'] == area, 'mean']
+            else:
+                mean = []
+
+            if hasattr(mean, 'empty') and not mean.empty:
                 st.write(f"meanTwh: {mean.iloc[0]:.2f}")
             else:
                 st.write('meanTwh: n/a')
@@ -134,12 +146,15 @@ class MapApp:
         st.session_state.last_clicked = (self._lat, self._lon)
 
         point = Point(self._lon, self._lat)
+
         for feature in self._geo['features']:
             polygon = shape(feature['geometry'])
             if polygon.contains(point):
-                st.write('here')
                 self._state.update_area(feature['properties']['ElSpotOmr'])
+                st.session_state.selection = st.session_state.area
                 break
+            else:
+                st.session_state.selection = None
 
         st.rerun()
     
@@ -155,6 +170,7 @@ class MapApp:
         ).add_to(self._m)
 
     def run(self):
+        self._setup_header()
         self._setup_containers()
         self._load_data()
         self._setup_map()

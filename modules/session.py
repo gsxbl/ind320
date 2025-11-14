@@ -68,9 +68,13 @@ class SessionState:
         ### MAP PARAMETERS ###
         if 'last_clicked' not in st.session_state:
             st.session_state.last_clicked = (0, 0)
+        if 'selection' not in st.session_state:
+            st.session_state.selection = None
 
     def update_area(self, area_code):
         """Update area-related session state variables."""
+        if area_code not in self._geo._locations.keys():
+            raise ValueError(f'Area code {area_code} not found in locations.')
         st.session_state.area = area_code
         st.session_state.city = self._geo.city_name(area_code)
         st.session_state.geo = self._geo(area_code)
