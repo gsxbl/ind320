@@ -17,7 +17,10 @@ class Page2:
         # general page setup
         st.set_page_config(layout='wide')
         self._state = SessionState()
-        Header()
+        Header(choices={
+            'group': False,
+            'source': False
+        })
 
         # instantiate and cache data
         self._api = OpenMeteo()
@@ -27,14 +30,17 @@ class Page2:
         '''
         Method to set the page header.
         '''
+        f = lambda dt: dt.strftime('%B %Y') if st.session_state.timescale == 'Monthly' \
+            else dt.strftime('%Y')
+
         st.header(f'Weather Data for {(st.session_state.city)}')
         if st.session_state.timescale == 'Custom':
             st.subheader(
                 f'Period: {st.session_state.start_time} to {st.session_state.end_time}')
         elif st.session_state.timescale == 'Annual':
-            st.subheader(f'Period: {st.session_state.year}')
+            st.subheader(f'Period: {f(st.session_state.year)}')
         elif st.session_state.timescale == 'Monthly':
-            st.subheader(f'Period: {st.session_state.month}')
+            st.subheader(f'Period: {f(st.session_state.month)}')
 
     ### LINE CHART COLUMN HELPER ###
     def agg_month(self, df:pd.DataFrame):

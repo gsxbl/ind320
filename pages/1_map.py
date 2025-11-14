@@ -1,6 +1,8 @@
 import streamlit as st
 import json
-import plotly.graph_objects as go
+from streamlit_folium import st_folium
+import folium
+from shapely.geometry import shape, Point
 from modules.session import SessionState
 from modules.header import Header
 from modules.db import Mongo
@@ -8,119 +10,161 @@ from modules.db import Mongo
 
 class MapApp:
     def __init__(self):
-        # initial setup
+        st.set_page_config(layout='wide')
         self._state = SessionState()
         Header()
-        
-        st.set_page_config(
-            page_title='IND320 Streamlit App',
-            layout='wide'
-        )
-        # instantiate client
+
+        self._lat, self._lon = st.session_state.last_clicked
+        if 'map_zoom' not in st.session_state:
+            st.session_state.map_zoom = 5
+
         self._db = Mongo()
-        # load geojson
-        self._geojson = self._load_geojson()
+        self._geo = self._load_geojson()
+        self._mutate_geojson()
 
-
+    @st.cache_data
     def _load_geojson(_self):
-        """Load price areas GeoJSON."""
+        """Load GeoJSON data for map visualization."""
         with open('data/file.geojson', 'r') as f:
             return json.load(f)
-        
+
     def _load_data(self):
-        '''
-        Load data from MongoDB based on session state.
-        '''
+        """Load data points from the database."""
         self._df = self._db.mean_by_area(
-            **self._state.kwargs,
-            index=['priceArea', st.session_state.column, 'startTime']
-        )
+            table=st.session_state.table,
+            column=st.session_state.column,
+            group=st.session_state.group,
+            month=st.session_state.month,
+            year=st.session_state.year,
+            start_time=st.session_state.start_time,
+            end_time=st.session_state.end_time,
+            timescale=st.session_state.timescale,
+            area=st.session_state.area)
         
-        self._data = self._df['mean'].to_dict()
+        # set values for TWh
+        self._df['mean'] /= 1000000
         self._df.reset_index(inplace=True)
 
+    def _mutate_geojson(self):
+        """Remove spaces from GeoJSON area identifiers."""
+        for feature in self._geo['features']:
+            area = feature['properties']['ElSpotOmr']
+            feature['properties']['ElSpotOmr'] = area.replace(' ', '')
 
-    def _map(self):
+    def _setup_containers(self):
+        """Setup Streamlit containers for layout."""
+        self._c1, self._c2 = st.columns([3, 1])
         
-        fig = go.Figure()
-
-        # --- Best Practice: Create a temporary copy for plotting ---
-        # This avoids modifying the original self._df on every rerun.
-        df_plot = self._df.copy()
-        df_plot['priceArea'] = df_plot['priceArea'].map(lambda x: x[:2] + ' ' + x[2:])
-
-        # Use Choroplethmapbox for a detailed base map
-        fig.add_trace(go.Choroplethmapbox(
-            geojson=self._geojson,
-            locations=df_plot['priceArea'],
-            z=df_plot['mean'],
-            featureidkey='properties.ElSpotOmr',
-            colorscale='Viridis',
-            colorbar_title='Mean Value',
-            marker_line_color='white',
-            marker_opacity=0.6,
-            hovertemplate='<b>%{location}</b><br>Mean: %{z:.3f}<extra></extra>'
-        ))
-
-               # --- 2. Add the Highlight Layer ---
-        selected_area = st.session_state.get('area')
-
-        if selected_area:
-            # Format the selected area name to match the GeoJSON property (e.g., 'NO1' -> 'NO 1')
-            selected_area_formatted = selected_area[:2] + ' ' + selected_area[2:]
-
-            # Find the geometry for the selected area
-            for feature in self._geojson['features']:
-                if feature.get('properties', {}).get('ElSpotOmr') == selected_area_formatted:
-                    geom = feature.get('geometry', {})
-                    lons, lats = [], []
-                    
-                    # Extract coordinates, handling both Polygon and MultiPolygon
-                    if geom.get('type') == 'Polygon':
-                        coords_list = geom.get('coordinates', [])
-                    elif geom.get('type') == 'MultiPolygon':
-                        # Flatten the list of polygons into a single list of rings
-                        coords_list = [ring for poly in geom.get('coordinates', []) for ring in poly]
-                    else:
-                        coords_list = []
-
-                    for ring in coords_list:
-                        lons.extend([coord[0] for coord in ring])
-                        lats.extend([coord[1] for coord in ring])
-                        lons.append(None) # Add a break between polygon rings
-                        lats.append(None)
-
-                    # Add the highlight trace on top
-                    fig.add_trace(go.Scattermapbox(
-                        lon=lons,
-                        lat=lats,
-                        mode='lines',
-                        fill='none',
-                        line=dict(width=4, color='#f401e0'), # Bright highlight color
-                        hoverinfo=None # Disable hover for the highlight line
-                    ))
-                    break # Stop searching once the area is found and drawn
-
-        lat, lon = st.session_state.geo['latitude'], st.session_state.geo['longitude']
-        fig.update_layout(
-            mapbox_style="open-street-map",
-            mapbox_center={"lat": lat, "lon": lon},
-            mapbox_zoom=5,
-
-            height=800,
-            margin={"r": 0, "t": 0, "l": 0, "b": 0}
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
     def _setup_map(self):
-        with st.spinner('Loading map...'):
-            self._map()
+        """Render map visualization using loaded GeoJSON and data."""
+        lat = st.session_state.geo['latitude']
+        lon = st.session_state.geo['longitude']
+        if st.session_state.last_clicked != (0, 0):
+            lat, lon = st.session_state.last_clicked
+        zoom = st.session_state.map_zoom
+        self._m = folium.Map(location=[lat, lon], zoom_start=zoom)
+
+        folium.Choropleth(
+            geo_data=self._geo,
+            name='choropleth',
+            data=self._df,
+            columns=['priceArea', 'mean'],
+            key_on='properties.ElSpotOmr',
+            fill_color='plasma',
+            fill_opacity=0.7,
+            line_opacity=0.2,
+            legend_name='Mean Value (TWh)',
+        ).add_to(self._m)
+
+        # outline ElSpotOmr == st.session_state.area
+        folium.GeoJson(
+            data={
+                "type": "FeatureCollection",
+                "features": [
+                    feature for feature in self._geo['features']
+                    if feature['properties']['ElSpotOmr'] == st.session_state.area
+                ]
+            },
+            style_function=lambda feature: {
+                'fillColor': 'blue',
+                'color': 'pink',
+                'weight': 3,
+                'dashArray': '5, 5'
+            },
+            name='Selected Area Outline',
+        ).add_to(self._m)
+
+    def _render_map(self):
+        """Render map visualization using loaded GeoJSON and data."""
+        # render map in container1
+        with self._c1:
+            self._map = st_folium(self._m, width=700, height=500)
+        if self._map and self._map.get('zoom') is not None:
+            st.session_state.map_zoom = self._map['zoom']
+
+    def _render_info(self):
+        """Show selection info next to the map."""
+        with self._c2:
+            st.subheader('Selection')
+            st.write(f"priceArea: {st.session_state.area}")
+
+            lat, lon = st.session_state.last_clicked
+            if (lat, lon) == (0, 0):
+                st.write('clicked location: n/a')
+            else:
+                st.write(f"clicked location: {lat:.4f}, {lon:.4f}")
+
+            mean = self._df.loc[self._df['priceArea'] == st.session_state.area, 'mean']
+            if not mean.empty:
+                st.write(f"meanTwh: {mean.iloc[0]:.2f}")
+            else:
+                st.write('meanTwh: n/a')
+
+    def _get_clicked_coords(self):
+        """Handle clicks and refresh state immediately."""
+        click = self._map.get('last_clicked') if self._map else None
+        if click is None:
+            return
+
+        self._lat = click['lat']
+        self._lon = click['lng']
+        if (self._lat, self._lon) == st.session_state.last_clicked:
+            return
+
+        st.session_state.last_clicked = (self._lat, self._lon)
+
+        point = Point(self._lon, self._lat)
+        for feature in self._geo['features']:
+            polygon = shape(feature['geometry'])
+            if polygon.contains(point):
+                st.write('here')
+                self._state.update_area(feature['properties']['ElSpotOmr'])
+                break
+
+        st.rerun()
+    
+    def _place_pin_on_map(self):
+        """Place a pin on the map at the specified coordinates."""
+        if st.session_state.last_clicked == (0, 0):
+            return
+        self._lat, self._lon = st.session_state.last_clicked
+        folium.Marker(
+            location=[self._lat, self._lon],
+            popup="Clicked Location",
+            icon=folium.Icon(color='red', icon='info-sign')
+        ).add_to(self._m)
 
     def run(self):
+        self._setup_containers()
         self._load_data()
         self._setup_map()
+        self._place_pin_on_map()
+        self._render_map()
+        self._render_info()
+        self._get_clicked_coords()
 
-if __name__ == '__main__':
-    main = MapApp()
-    main.run()
+
+
+if __name__ == "__main__":
+    app = MapApp()
+    app.run()

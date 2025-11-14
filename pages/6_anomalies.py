@@ -19,7 +19,10 @@ class NewB:
         # general page setup
         st.set_page_config(layout='wide')
         self._state = SessionState()
-        Header()
+        Header(choices={
+            'group': False,
+            'source': False
+        })
 
         # instantiate and cache data
         self._api = OpenMeteo()
