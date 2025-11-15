@@ -18,17 +18,17 @@ class Main:
                 ("Historical", "pages/5_historical.py"),
                 ("Anomaly analysis", "pages/6_anomalies.py"),
             ],
+            "🗺️ Energy": [
+                ("Charts", "pages/2_charts.py"),
+                ("Frequency Analysis", "pages/3_frequency_analysis.py"),
+                ("Correlations", "pages/9_correlation.py"),
+            ],
             "❄️ Snow": [
                 ("Map Visualization", "pages/1_map.py"),
                 ("Snow Analysis", "pages/8_snow.py"),
             ],
-            "🗺️ Energy": [
-                ("Charts", "pages/2_charts.py"),
-                ("Frequency Analysis", "pages/3_frequency_analysis.py"),
-            ],
             "🔧 Utilities": [
                 ("Settings", "pages/10_settings.py"),
-                ("REPL", "pages/9_repl.py"),
                 ("Droids", "pages/7_page_five.py"),
             ],
         }
