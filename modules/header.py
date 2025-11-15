@@ -201,7 +201,9 @@ class Header:
         if isinstance(self._group, str):
             self._group = [self._group]  # make it a list for consistency
 
-        st.session_state.group = self._group
+        if st.session_state.group != self._group:
+            st.session_state.group = self._group
+            st.rerun()
 
     def _setup_containers(self):
         '''

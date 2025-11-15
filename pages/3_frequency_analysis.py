@@ -38,13 +38,14 @@ class NewA:
         Method to setup page heading
         '''
         if st.session_state.timescale == 'Monthly':
-            scale = st.session_state.month
+            scale = st.session_state.month.strftime('%B %Y')
         elif st.session_state.timescale == 'Annual':
-            scale = st.session_state.year
+            scale = st.session_state.year.strftime('%Y')
         else:
             scale = f"{st.session_state.start_time.date()} to {st.session_state.end_time.date()}"
 
-        st.header(f'Energy {st.session_state.column[:-5].capitalize()} Analysis for {scale}')
+        st.header(
+            f'Energy {st.session_state.column[:-5].capitalize()} Analysis for {st.session_state.area}, {scale}')
         
     def _setup_tabs(self):
         '''
