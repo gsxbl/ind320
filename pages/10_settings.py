@@ -29,7 +29,7 @@ class StreamlitSettings:
             layout = st.selectbox('Layout', layout_options, index=layout_idx)
             sidebar_idx = sidebar_options.index(defaults['sidebar']) if defaults['sidebar'] in sidebar_options else 0
             sidebar = st.selectbox('Sidebar state', sidebar_options, index=sidebar_idx)
-            submitted = st.form_submit_button('Save settings', use_container_width=True)
+            submitted = st.form_submit_button('Save settings', width='stretch')
 
         if submitted:
             st.session_state.app_title = title or 'IND320 Streamlit App'
