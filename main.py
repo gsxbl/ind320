@@ -13,7 +13,7 @@ class Main:
             Header(render=False)
 
         self._pages_structure = {
-            "📊 Wheather": [
+            "📊 Weather": [
                 ("Line Chart Columns", "pages/4_line_chart.py"),
                 ("Historical", "pages/5_historical.py"),
                 ("Anomaly analysis", "pages/6_anomalies.py"),

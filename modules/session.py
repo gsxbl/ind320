@@ -71,6 +71,10 @@ class SessionState:
         if 'selection' not in st.session_state:
             st.session_state.selection = None
 
+        # ### SLIDING WINDOW PARAMETERS ###
+        # if 'center' not in st.session_state:
+        #     st.session_state.center = None
+
     def update_area(self, area_code):
         """Update area-related session state variables."""
         if area_code not in self._geo._locations.keys():

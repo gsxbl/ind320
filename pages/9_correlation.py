@@ -21,6 +21,7 @@ class SlidingWindow:
         self._api = OpenMeteo()
         self._db = Mongo()
 
+    ### LOAD DATA METHODS ###
     def _get_wather_data(self):
         '''get data from openmeteo api'''
         self._df_w = self._api.get_weather_data(
@@ -38,6 +39,7 @@ class SlidingWindow:
             index=['startTime']
         )
 
+    ### SELECTOR METHODS ###
     def _setup_expander(self):
         '''setup expander for lag selection'''
         self._exp = st.expander('Lag Selection', expanded=False)
@@ -50,12 +52,15 @@ class SlidingWindow:
     def _setup_lag_ui(self):
         '''set up a single slider to select lag value'''
         with self._c1:
-            self._lag = st.slider('Select lag', 0, 10, 0)
+            self._lag = st.slider('Select lag', -10, 10, 0)
 
     def _setup_sliding_window(self):
         '''setup sliding window size slider'''
+        hours = (st.session_state.end_time - st.session_state.start_time).total_seconds() // 3600
+        hours = int(hours)
         with self._c2:
-            self._window_size = st.slider('Select Sliding Window Size', 1, 200, 5)
+            self._window_size = st.slider(
+                'Select Sliding Window Size [hours]', 1, hours, hours//8)
 
     def _setup_kind_ui(self):
         '''setup selevtor for kind of weather data'''
@@ -65,6 +70,8 @@ class SlidingWindow:
                 options=self._df_w.columns.tolist(),
                 horizontal=True
             )
+    
+    ### DATA PREPARATION METHODS ###
     def _match_dataframe_indices(self):
         '''merge weather and energy dataframes on time index'''
         # get the shortest index range
@@ -90,7 +97,15 @@ class SlidingWindow:
     def _lagged_correlation(self):
         '''copute the lagged correlation'''
         self._x.index += self._unit * self._lag
-        self._corr = np.corrcoef(self._y[self._lag:], self._x[0:len(self._y)-self._lag])
+
+        if self._lag > 0:
+            self._corr = np.corrcoef(self._y[:-self._lag], self._x[self._lag:])
+        elif self._lag < 0:
+            self._corr = np.corrcoef(self._y[abs(self._lag):], self._x[0:len(self._y)-abs(self._lag)])
+        else:
+            self._corr = np.corrcoef(self._y[self._lag:], self._x[0:len(self._y)-self._lag])
+        f"Correlation between {self._x.name} and {self._y.name} lagged {self._lag} timepoints: {self._corr[0,1]:.3f}"
+
 
     def _rolling_window(self):
         '''setup the rolling window'''
@@ -98,38 +113,105 @@ class SlidingWindow:
             window=self._window_size, center=True
             ).corr(self._df['quantityKwh'])
 
-
-    def _plot(self):
+    ### PLOTTING METHODS ###
+    def _setup_figure(self):
         '''plot the lagged correlation'''
-        fig = make_subplots(
+        self._fig = make_subplots(
             rows=3, cols=1, shared_xaxes=True)
 
-        fig.add_trace(
+    def _add_traces(self):
+        '''add traces to the figure'''
+        # add the weather data
+        self._fig.add_trace(
             go.Scatter(
                 x=self._index, y=self._x,
                 mode='lines', name=st.session_state.kind),
             row=1, col=1
             )
-        fig.add_trace(
+        
+        # add the energy data
+        self._fig.add_trace(
             go.Scatter(
                 x=self._index, y=self._y,
                 mode='lines', name=st.session_state.column[:-5].capitalize()),
             row=2, col=1
             )
-        
-        fig.add_trace(
+        # add the rolling correlation
+        self._fig.add_trace(
             go.Scatter(
                 x=self._index, y=self._rolling,
                 mode='lines', name='Rolling Correlation'),
             row=3, col=1
             )
         
-        fig.update_layout(
+        self._fig.update_layout(
             height=800,
             title_text="Sliding Window Correlation with Lag",
         )
 
-        st.plotly_chart(fig, width='stretch')
+    def _setup_overlay_functions(self):
+        '''add overlays to the figure'''
+        self._overlay = lambda col, start, i: go.Scatter(
+            x=self._df.loc[start-i:start+i].index,
+            y=col.loc[start-i:start+i],
+            mode="lines",
+            line=dict(color="red", width=3),
+            showlegend=False
+        )
+
+        self._marker = lambda col, start: go.Scatter(
+            x=np.array([start]),
+            y=np.array([col.loc[start]]),
+            mode="markers",
+            name="Center",
+            marker=dict(color="red", size=15, symbol="star"),
+            showlegend=True
+        )
+
+    def _add_overlays(self):
+        '''render overlays on the figure'''
+        # get the sliding window center index
+        start = self._rolling.dropna().index[0]
+
+        if 'center' not in st.session_state:
+            st.session_state.center = start
+        
+        start = st.session_state.center
+
+        i = (self._window_size // 2) * self._unit
+        x, y = self._df[st.session_state.kind], self._df['quantityKwh']
+        z = self._rolling
+
+        # add overlays to the figure
+        self._fig.add_trace(self._overlay(x,start,i), row=1, col=1)
+        self._fig.add_trace(self._overlay(y,start,i), row=2, col=1)
+        self._fig.add_trace(self._marker(z,start), row=3, col=1)
+
+
+    def _render_plot(self):
+        '''render the plotly figure'''
+        st.plotly_chart(self._fig, width='stretch')
+
+    def _window_slider(self):
+        '''slider to select center of sliding window'''
+        options = self._rolling.dropna().index
+
+        if options.empty:
+            st.warning('No rolling correlation values to display.')
+            return
+
+        # keep center aligned with available options
+        if st.session_state.get('center') not in options:
+            st.session_state.center = options[0]
+
+        with self._exp:
+            st.select_slider(
+                'Select center of sliding window',
+                options=list(options),
+                value=st.session_state.center,
+                key='center'
+            )
+
 
     def run(self):
         # load data
@@ -150,8 +232,13 @@ class SlidingWindow:
         self._lagged_correlation()
 
         # plot
-        self._plot()
-        
+        self._setup_figure()
+        self._add_traces()
+        self._setup_overlay_functions()
+        self._add_overlays()
+        self._render_plot()
+
+        self._window_slider()
         # debug
 
 if __name__ == '__main__':
