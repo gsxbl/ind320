@@ -168,7 +168,7 @@ class Header:
             value=(start_val, end_val)
         )
         # Execute button only updates state when clicked
-        if st.button('Execute', use_container_width=True):
+        if st.button('Execute', width='stretch'):
             st.session_state.start_time = start_time
             st.session_state.end_time = end_time
             st.rerun()
