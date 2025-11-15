@@ -19,10 +19,10 @@ class Main:
                 ("Anomaly analysis", "pages/6_anomalies.py"),
             ],
             "❄️ Snow": [
+                ("Map Visualization", "pages/1_map.py"),
                 ("Snow Analysis", "pages/8_snow.py"),
             ],
             "🗺️ Energy": [
-                ("Map Visualization", "pages/1_map.py"),
                 ("Charts", "pages/2_charts.py"),
                 ("Frequency Analysis", "pages/3_frequency_analysis.py"),
             ],
@@ -92,7 +92,7 @@ class Main:
         with st.sidebar:
             st.markdown("### 🧭 Navigation")
 
-            if st.button("🏠 Home", use_container_width=True):
+            if st.button("🏠 Home", width='stretch'):
                 st.switch_page(self._home_page)
 
             st.divider()
@@ -100,7 +100,7 @@ class Main:
             for group_name, items in self._pages_structure.items():
                 with st.expander(group_name, expanded=False):
                     for (title, path), page in zip(items, self._pages[group_name]):
-                        if st.button(title, use_container_width=True, key=f"nav_{path}"):
+                        if st.button(title, width='stretch', key=f"nav_{path}"):
                             st.switch_page(page)
 
     def _all_pages(self):
