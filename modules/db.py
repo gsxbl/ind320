@@ -61,6 +61,8 @@ class Mongo:
             }
         elif timescale == 'Annual':
             # compute next year as datetime
+            if not isinstance(year, datetime):
+                year = datetime(year, 1, 1)
             next_year = datetime(year.year + 1, 1, 1)
 
             query = {
