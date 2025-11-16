@@ -21,21 +21,30 @@ class SarimaxModel:
         '''Add exogenous variables to the SARIMAX model'''
         self._exog = exog
 
-    @st.cache_data
-    def fit(_self, order=(1, 1, 1), seasonal_order=(0, 0, 0, 0)):
+    def fit(self, order=(1, 1, 1), seasonal_order=(0, 0, 0, 0)):
         '''Fit the SARIMAX model to the data'''
-        _self._model = SARIMAX(_self._data, order=order, seasonal_order=seasonal_order)
-        _self._results = _self._model.fit(disp=False)
+        self._model = SARIMAX(self._data, order=order,
+                              seasonal_order=seasonal_order,
+                              exog=self._exog)
+        
+        self._results = self._model.fit(disp=False)
+        self._summary = self._results.summary()
 
-    @st.cache_data
-    def forecast(_self, start):
+    def forecast(self, start):
         '''Generate forecast from the fitted model'''
-        if _self._results is None:
+        if self._results is None:
             raise ValueError("Model must be fitted before forecasting.")
         
-        pred_1 =_self._results.get_prediction()
+        pred_1 = self._results.get_prediction()
         pred_ci = pred_1.conf_int()
-        pred_d = _self._results.get_prediction(start=start, dynamic=True)
+        pred_d = self._results.get_prediction(start=start, dynamic=True)
         pred_d_ci = pred_d.conf_int()
 
         return pred_1, pred_ci, pred_d, pred_d_ci
+    
+    @property
+    def summary(self):
+        '''Return the summary of the fitted model'''
+        if self._results is None:
+            raise ValueError("Model must be fitted before getting summary.")
+        return self._summary
