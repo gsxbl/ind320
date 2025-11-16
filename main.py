@@ -28,7 +28,7 @@ class Main:
                 ("Snow Analysis", "pages/8_snow.py"),
             ],
             "🔧 Utilities": [
-                ("Settings", "pages/10_settings.py"),
+                ("Settings", "pages/11_settings.py"),
                 ("Droids", "pages/7_page_five.py"),
             ],
         }
