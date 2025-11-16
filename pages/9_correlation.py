@@ -119,7 +119,6 @@ class SlidingWindow:
             self._corr = np.corrcoef(self._y[self._lag:], self._x[0:len(self._y)-self._lag])
         f"Crosscorrelation: {self._corr[0,1]:.3f}"
 
-
     def _rolling_window(self):
         '''setup the rolling window'''
         # convert datetime lag (Timedelta) to integer index shift
@@ -213,7 +212,6 @@ class SlidingWindow:
         self._fig.add_trace(self._overlay(x, start+off,i), row=1, col=1)
         self._fig.add_trace(self._overlay(y,start,i), row=2, col=1)
         self._fig.add_trace(self._marker(z,start), row=3, col=1)
-
 
     def _render_plot(self):
         '''render the plotly figure'''
