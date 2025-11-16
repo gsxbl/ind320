@@ -27,7 +27,7 @@ class Forecast:
         '''get data from mongodb'''
         self._df_e = self._db.get_data(
             **self._state.kwargs,
-            index=['priceArea', st.session_state.column, 'startTime']
+            # index=['priceArea', st.session_state.column, 'startTime']
         )
 
     def _get_weather_data(self):
@@ -39,13 +39,25 @@ class Forecast:
             timescale=st.session_state.timescale
         )
     
+    def _get_weather_exogenous(self):
+        '''get exogenous weather data from mongodb'''
+        self._weather_props = self._df_w.columns.tolist()
+
     def _slice_data(self):
         '''slice data for the selected area and group'''
+        self._df_e = self._df_e[
+            self._df_e[st.session_state.column].isin(st.session_state.group)]
+
+        self._df_e = self._df_e.groupby([
+            'priceArea', 'startTime'
+        ]).agg({'quantityKwh': 'sum'})
+
+        self._slice_msg = f'aggreagted {st.session_state.group} for {st.session_state.area}'
+
         self._df_e = self._df_e.loc[
-            st.session_state.area,
-            st.session_state.group[4]
+            st.session_state.area
             ]['quantityKwh']
-          
+    
     ### DATA PREPARATION METHODS ###
     def _match_dataframe_indices(self):
         '''merge weather and energy dataframes on time index'''
@@ -55,11 +67,12 @@ class Forecast:
         self._df_w = self._df_w.loc[self._index]
     
     def _setup_containers(self):
-        """Setup Streamlit containers for layout."""
+        """Setup Streamlit containers for layout."""      
         with st.expander('Forecast Settings', expanded=False):
             self._c1, self._c2 = st.columns([3, 1])
-            self._c3 = st.columns(6)
-    
+            self._c3 = st.columns(8)
+            self._c4 = st.container()
+
     def _setup_forecast_settings(self):
         '''setup forecast settings'''
         with self._c1:
@@ -86,7 +99,7 @@ class Forecast:
             )
         with self._c3[1]:
             st.number_input(
-                'Differencing Order (d)', min_value=0, max_value=2, value=1, step=1, key='diff_order'
+                'Diff. Order (d)', min_value=0, max_value=2, value=1, step=1, key='diff_order'
             )
         with self._c3[2]:
             st.number_input(
@@ -98,12 +111,38 @@ class Forecast:
             )
         with self._c3[4]:
             st.number_input(
-                'Seasonal Differencing Order (D)', min_value=0, max_value=1, value=1, step=1, key='sdiff_order'
+                'Seasonal Diff. Order (D)', min_value=0, max_value=1, value=1, step=1, key='sdiff_order'
             )
         with self._c3[5]:
             st.number_input(
                 'Seasonal MA Order (Q)', min_value=0, max_value=2, value=1, step=1, key='sma_order'
             )
+        with self._c3[6]:
+            st.number_input(
+                'Seasonal Period (m)', min_value=1, max_value=24, value=12, step=1, key='seasonal_period'
+            )
+        with self._c3[7]:
+            st.selectbox(
+                'Trend Component',
+                options=['n','c','t','ct', None],
+                index=1,
+                key='trend_component'
+            )
+
+    def _setup_exogenous_variables(self):
+        '''setup radio buttons for exogenous variables'''
+        with self._c4:
+            self._exog = st.pills(
+                'Select exogenous variables',
+                options=self._weather_props,
+                selection_mode='multi',
+                default=[],
+                key='exogenous_vars'
+            )
+            if self._exog:
+                self._msg = f'Selected exogenous variables: {", ".join(self._exog)}'
+            else:
+                self._msg = 'No exogenous variables selected.'
 
     def _add_data(self):
         '''add exogenous data to sarimax model'''
@@ -187,7 +226,11 @@ class Forecast:
         ))
 
     def _update_layout(self):
+        title = f'SARIMAX Forecasting of {st.session_state.column} '\
+                f'aggregated by {st.session_state.group} for {st.session_state.area} '\
+                f' with exogenous variables: {", ".join(self._exog)}'
         self._fig.update_layout(
+            title=title,
             xaxis_title="Date",
             yaxis_title="kWh",
             template="plotly_white",
@@ -218,14 +261,19 @@ class Forecast:
         ### load and prepare data
         self._get_energy_data()
         self._get_weather_data()
+        self._get_weather_exogenous()
         self._slice_data()
         self._match_dataframe_indices()
 
-        ### setup and train model
+        ### setup selectors
         self._setup_containers()
         self._setup_forecast_settings()
+        self._setup_exogenous_variables()
         self._add_data()
-        with st.spinner('Fitting SARIMAX model...'):
+        
+        ### and train model
+        with st.spinner(
+            f'Training SARIMAX model with {self._msg}'):
             self._fit_sarimax_model()
             self._train_sarimax_model()
         
