@@ -14,6 +14,11 @@ from modules.session import SessionState
 
 
 class SlidingWindow:
+    '''
+    Class to handle Sliding Window Average with lag correlation analysis
+    All methods are organized into sections.
+    Page is rendered in the run method.
+    '''
     def __init__(self):
         self._state = SessionState()
         Header()
