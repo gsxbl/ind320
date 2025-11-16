@@ -1,7 +1,9 @@
 '''This page will implement forecasting functionalities.'''
 import streamlit as st
-from statsmodels.tsa.statespace.sarimax import SARIMAX
+import numpy as np
 import plotly.graph_objects as go
+
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 from modules.api import OpenMeteo
 from modules.db import Mongo
@@ -38,21 +40,36 @@ class Forecast:
         )
     
     def _slice_data(self):
-        '''slice data for the selected area'''
+        '''slice data for the selected area and group'''
         self._df_e = self._df_e.loc[
-            st.session_state.area, st.session_state.group[1]
+            st.session_state.area,
+            st.session_state.group[4]
             ]['quantityKwh']
-        
+          
+    ### DATA PREPARATION METHODS ###
+    def _match_dataframe_indices(self):
+        '''merge weather and energy dataframes on time index'''
+        # get the shortest index range
+        self._index = np.intersect1d(self._df_e.index, self._df_w.index)
+        self._df_e = self._df_e.loc[self._index]
+        self._df_w = self._df_w.loc[self._index]
+    
+    def _setup_containers(self):
+        """Setup Streamlit containers for layout."""
+        with st.expander('Forecast Settings', expanded=False):
+            self._c1, self._c2 = st.columns([3, 1])
+            self._c3 = st.columns(6)
+    
     def _setup_forecast_settings(self):
         '''setup forecast settings'''
-        with st.expander('Forecast Settings', expanded=True):
+        with self._c1:
             self._mid = len(self._df_e)//2
-            opt = st.slider(
-                'Forecast Start Date',
-                min_value=self._df_e.index[0].to_pydatetime(),
-                max_value=self._df_e.index[-1].to_pydatetime(),
-                value=self._df_e.index[self._mid].to_pydatetime(),
+            opt = st.select_slider(
+                'Select forecast starting point',
+                options=self._df_e.index,
+                value=self._df_e.index[self._mid]
             )
+        with self._c2:
 
             # find index of opt
             self._mid = self._df_e.index.get_loc(opt)
@@ -60,7 +77,32 @@ class Forecast:
             st.session_state.forecast_start = str(opt)
 
             st.session_state.forecast_horizon = st.number_input(
-                'Forecast Horizon (in number of periods)', min_value=1, max_value=365, value=30, step=1
+                'Forecast Horizon (in number of periods)', min_value=1, max_value=365, value=12, step=1
+            )
+
+        with self._c3[0]:
+            st.number_input(
+                'AR Order (p)', min_value=0, max_value=5, value=1, step=1, key='ar_order'
+            )
+        with self._c3[1]:
+            st.number_input(
+                'Differencing Order (d)', min_value=0, max_value=2, value=1, step=1, key='diff_order'
+            )
+        with self._c3[2]:
+            st.number_input(
+                'MA Order (q)', min_value=0, max_value=5, value=1, step=1, key='ma_order'
+            )
+        with self._c3[3]:
+            st.number_input(
+                'Seasonal AR Order (P)', min_value=0, max_value=2, value=1, step=1, key='sar_order'
+            )
+        with self._c3[4]:
+            st.number_input(
+                'Seasonal Differencing Order (D)', min_value=0, max_value=1, value=1, step=1, key='sdiff_order'
+            )
+        with self._c3[5]:
+            st.number_input(
+                'Seasonal MA Order (Q)', min_value=0, max_value=2, value=1, step=1, key='sma_order'
             )
 
     def _add_data(self):
@@ -72,23 +114,14 @@ class Forecast:
         '''fit SARIMAX model'''
         self._sarimax.fit(order=(1, 1, 1), seasonal_order=(1, 1, 1, 12))
 
-
     def _train_sarimax_model(self):
         '''train SARIMAX model'''
         p1, p_ci, p_d, p_d_ci = self._sarimax.forecast(
             start=st.session_state.forecast_start)
         
+        # assign predictions and confidence intervals
         self._pred_1, self._pred_ci = p1, p_ci
-        
         self._pred_d, self._pred_d_ci = p_d, p_d_ci
-
-    # def _make_predictions(self):
-    #     '''make predictions'''
-    #     self._pred_1 = self._res.get_prediction()
-    #     self._pred_ci = self._pred_1.conf_int()
-    #     self._pred_d = self._res.get_prediction(
-    #         start=st.session_state.forecast_start,
-    #         dynamic=True)
     
     def _setup_figure(self):
         self._fig = go.Figure()
@@ -152,13 +185,14 @@ class Forecast:
             mode="lines",
             line=dict(color="green")
         ))
+
     def _update_layout(self):
         self._fig.update_layout(
-            title="SARIMAX forecast vs. observed",
             xaxis_title="Date",
             yaxis_title="kWh",
             template="plotly_white",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            height=800,
         )
 
         self._fig.update_xaxes(
@@ -178,25 +212,31 @@ class Forecast:
     def _summary(self):
         '''display model summary'''
         with st.expander('Model Summary', expanded=False):
-            st.text(self._sarimax._results.summary().as_text())
+            st.text(self._sarimax.summary.as_text())
 
     def run(self):
         ### load and prepare data
         self._get_energy_data()
         self._get_weather_data()
         self._slice_data()
-        self._add_data()
+        self._match_dataframe_indices()
+
         ### setup and train model
+        self._setup_containers()
         self._setup_forecast_settings()
-        self._fit_sarimax_model()
-        self._train_sarimax_model()
+        self._add_data()
+        with st.spinner('Fitting SARIMAX model...'):
+            self._fit_sarimax_model()
+            self._train_sarimax_model()
         
         ### setup and display figure
         self._setup_figure()
         self._add_onestep_trace()
         self._add_dynamic_trace()
         self._update_layout()
-        self._setup_forecasting_ui()
+        
+        ### display model summary
+        self._summary()
 
         ### DEBUG
         # self._df_e
