@@ -22,6 +22,7 @@ class Main:
                 ("Charts", "pages/2_charts.py"),
                 ("Frequency Analysis", "pages/3_frequency_analysis.py"),
                 ("Correlations", "pages/9_correlation.py"),
+                ("Forecasting", "pages/10_forecasting.py"),
             ],
             "❄️ Snow": [
                 ("Map Visualization", "pages/1_map.py"),
