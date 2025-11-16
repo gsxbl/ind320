@@ -22,7 +22,7 @@ class SlidingWindow:
         self._db = Mongo()
 
     ### LOAD DATA METHODS ###
-    def _get_wather_data(self):
+    def _get_weather_data(self):
         '''get data from openmeteo api'''
         self._df_w = self._api.get_weather_data(
             **st.session_state.geo,
@@ -243,7 +243,7 @@ class SlidingWindow:
 
     def run(self):
         # load data
-        self._get_wather_data()
+        self._get_weather_data()
         self._get_energy_data()
         self._match_dataframe_indices()
         
