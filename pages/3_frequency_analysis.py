@@ -171,5 +171,8 @@ class NewA:
             st.warning(f"An error occurred while rendering the page: {e}")
 
 if __name__ == '__main__':
-    main = NewA()
-    main.run()
+    try:
+        main = NewA()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

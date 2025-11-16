@@ -182,5 +182,8 @@ class MapApp:
 
 
 if __name__ == "__main__":
-    app = MapApp()
-    app.run()
+    try:
+        app = MapApp()
+        app.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

@@ -134,5 +134,8 @@ class NewB:
         self.setup_contents()
 
 if __name__ == '__main__':
-    main = NewB()
-    main.run()
+    try:
+        main = NewB()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

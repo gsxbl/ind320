@@ -132,5 +132,8 @@ class Page3:
         self.plot()
 
 if __name__ == '__main__':
-    main = Page3()
-    main.run()
+    try:
+        main = Page3()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

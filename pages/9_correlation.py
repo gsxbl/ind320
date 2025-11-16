@@ -276,8 +276,8 @@ class SlidingWindow:
         # debug
 
 if __name__ == '__main__':
-    main = SlidingWindow()
     try:
+        main = SlidingWindow()
         main.run()  
     except Exception as e:
         st.warning(f"An error occurred: {e}. Reset settings and try again.")

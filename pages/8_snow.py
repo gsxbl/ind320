@@ -75,5 +75,8 @@ class Snow:
 
 
 if __name__ == '__main__':
-    app = Snow()
-    app.run()
+    try:
+        main = Snow()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

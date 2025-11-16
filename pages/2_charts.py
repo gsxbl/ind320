@@ -156,8 +156,8 @@ class Page4:
 
 
 if __name__ == '__main__':
-    
-    main = Page4()
-    main.run()
-    # except Exception as e:
-    #     st.warning(f'An error occurred: {e}')
+    try:
+        main = Page4()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

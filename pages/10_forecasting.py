@@ -242,5 +242,8 @@ class Forecast:
         # self._df_e
 
 if __name__ == '__main__':
-    main = Forecast()
-    main.run()
+    try:
+        main = Forecast()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

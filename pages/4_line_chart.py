@@ -78,5 +78,8 @@ class Page2:
         self.setup_contents()
 
 if __name__ == '__main__':
-    main = Page2()
-    main.run()
+    try:
+        main = Page2()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

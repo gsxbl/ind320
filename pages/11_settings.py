@@ -44,4 +44,8 @@ class StreamlitSettings:
 
 
 if __name__ == '__main__':
-    StreamlitSettings().run()
+    try:
+        main = StreamlitSettings()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

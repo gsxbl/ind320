@@ -22,4 +22,7 @@ class Page5:
                  width='stretch')
 
 if __name__ == '__main__': 
-    Page5()
+    try:
+        Page5()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
