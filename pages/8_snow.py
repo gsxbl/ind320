@@ -28,8 +28,14 @@ class Snow:
         else:
             period = f"{self._state.kwargs['start_date']} - {self._state.kwargs['end_date']}"
         
+        if st.session_state.selection == None:
+            loc = f'Location {st.session_state.last_clicked} not in known priceArea'
+        else:
+            loc = st.session_state.city
+
         with col1:
-            st.subheader(f"📊 {st.session_state.city}, {period}")
+
+            st.subheader(f"📊 {loc}, {period}")
             st.metric(
                 "Overall Average Qt",
                 f"{results['overall_avg_tonnes']:.1f} tonnes/m"
@@ -76,7 +82,7 @@ class Snow:
 
 if __name__ == '__main__':
     try:
-        main = Snow()
-        main.run()
+        app = Snow()
+        app.run()
     except Exception as e:
         st.error(f"An error occurred: {e}")
