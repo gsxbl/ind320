@@ -1,44 +1,9 @@
 """Module to handle API requests with caching."""
 import openmeteo_requests
+from datetime import datetime
 import pandas as pd
 import requests
 import streamlit as st
-
-class GeoPos:
-    """Callable class to get geographical positions of Norwegian cities."""
-    def __init__(self):
-        self._locations = {
-            "Oslo": {"latitude": 59.91, "longitude": 10.75},
-            "Bergen": {"latitude": 60.39, "longitude": 5.32},
-            "Trondheim": {"latitude": 63.43, "longitude": 10.40},
-            "Tromsø": {"latitude": 69.65, "longitude": 18.96},
-            "Kristiansand": {"latitude": 58.15, "longitude": 8.00},
-        }
-
-        self._conv = {'NO1':'Oslo', 'NO2':'Kristiansand', 
-                   'NO3':'Trondheim', 'NO4':'Tromsø', 'NO5':'Bergen'}
-        
-        self._conv2 = {v:k for k,v in self._conv.items()}
-
-    def __call__(self, arg, to_loc=False):
-        if to_loc:
-            return self._conv.get(arg, None)
-        arg = self._conv.get(arg, None)
-        return self._locations.get(arg, None)
-    
-    @property
-    def areas(self):
-        """Return list of available area codes."""
-        return list(self._conv.keys())
-    
-    @property
-    def cities(self):
-        """Return list of available city names."""
-        return list(self._locations.keys())
-
-    def get_area(self, city):
-        """Get area code for a given city name."""
-        return self._conv2.get(city, None)
 
 class OpenMeteo:
     """Client for Open-Meteo weather API with Streamlit caching."""
@@ -82,6 +47,11 @@ class OpenMeteo:
         kwargs['models'] = kwargs.get('models', 'era5')
         kwargs['wind_speed_unit'] = kwargs.get('wind_speed_unit', 'ms')
         
+        if isinstance(kwargs['start_date'], datetime):
+            kwargs['start_date'] = kwargs['start_date'].strftime('%Y-%m-%d')
+        if isinstance(kwargs['end_date'], datetime):
+            kwargs['end_date'] = kwargs['end_date'].strftime('%Y-%m-%d')
+
         # Make API call
         response = _self._client.weather_api(url, params=kwargs)[0].Hourly()
         
@@ -98,5 +68,5 @@ class OpenMeteo:
         # Populate data for each hourly variable
         for i, kind in enumerate(kwargs.get("hourly", [])):
             data[kind] = response.Variables(i).ValuesAsNumpy()
-        
+            
         return pd.DataFrame(data).set_index('date')

@@ -1,4 +1,7 @@
 streamlit
+streamlit-folium
+folium
+shapely
 pandas
 plotly
 pymongo

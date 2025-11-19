@@ -2,8 +2,10 @@
 # invoke darkmode
 base = "dark"
 
+# always load on save
 [server]
 runOnSave = true
 
+# reduce racing conditions
 [runner]
 fastReruns = false

@@ -1,7 +1,9 @@
 import streamlit as st
 import plotly.graph_objects as go
 
-from modules.api import GeoPos, OpenMeteo
+from modules.api import OpenMeteo
+from modules.geo import GeoPos
+from modules.header import Header
 from modules.session import SessionState
 
 class Page3:
@@ -13,11 +15,15 @@ class Page3:
     making them accessible to all methods.
     '''
     def __init__(self):
-        # setup session state
-        SessionState()
-
         # general page setup
         st.set_page_config(layout='wide')
+        
+        # setup session state
+        self._state = SessionState()
+        Header(choices={
+            'group': False,
+            'source': False
+        })
 
         # instantiate and cache data
         self._api = OpenMeteo()
@@ -33,7 +39,7 @@ class Page3:
         to the self._df property.
         '''
         self._df = self._api.get_weather_data(
-            **self._loc(st.session_state.area),
+            **self._state.kwargs
         )
         
     def _get_months(self):
@@ -49,7 +55,7 @@ class Page3:
         '''
         Method to set the page header.
         '''
-        st.header(f'Weather Data for {self._loc(st.session_state.area, True)}')
+        st.header(f'Weather Data for {st.session_state.city}')
     
     def _setup_kind_selector(self):
         '''
@@ -126,5 +132,8 @@ class Page3:
         self.plot()
 
 if __name__ == '__main__':
-    main = Page3()
-    main.run()
+    try:
+        main = Page3()
+        main.run()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")

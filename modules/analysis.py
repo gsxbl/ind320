@@ -14,27 +14,36 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 def highpass_filter(data, cutoff_freq):
-    # Perform DCT
-    f = np.arange(0, data.shape[0])
-    dct_res = dct(data, type=1, norm='forward')
+    # Handle NaNs by interpolating
+    clean_data = data.interpolate(
+        method='linear').fillna(method='bfill').fillna(method='ffill')
+    
+    # Perform DCT with orthonormal normalization
+    f = np.arange(0, clean_data.shape[0])
+    dct_res = dct(clean_data, type=1, norm='ortho')
     dct_res[f < cutoff_freq] = 0
-    # Perform inverse DCT
-    return idct(dct_res, type=1, norm='forward')
+    # Perform inverse DCT with matching normalization
+    return idct(dct_res, type=1, norm='ortho')
 
 @st.cache_data
-def plot_SPC(data, key:str, **kwargs):
+def plot_SPC(data, key: str, **kwargs):
     # filtered signals
     highpass = highpass_filter(data[key], cutoff_freq=kwargs.get('cutoff_freq', 30))
     lowpass = data[key] - highpass
 
-    # robust statistics and outlier detection
+    # robust statistics and outlier detection on highpass (SATV)
     m = stats.trim_mean(highpass, kwargs.get('proportioncut', 0.05))
     s = stats.median_abs_deviation(highpass)
     n = kwargs.get('k', 3)
-    # print(f"Robust mean: {m}, Robust std: {s}")
+    
+    # Thresholds in temperature space: centered at lowpass + m (seasonal trend + offset)
+    boundary_upper = lowpass + m + n * s
+    boundary_lower = lowpass + m - n * s
+    
+    # Detect outliers where highpass exceeds bounds
     outliers = np.where(np.abs(highpass - m) > n * s, data[key], np.nan)
 
-    # instantiate figure
+     # instantiate figure
     fig = go.Figure()
     boundary = dict(dash='dash', width=0.5, color='grey')
 
@@ -50,13 +59,13 @@ def plot_SPC(data, key:str, **kwargs):
 
     # add confidence intervals with dashed lines
     fig.add_trace(go.Scatter(
-        x=data.index, y=lowpass - m + n*s,
-        mode='lines', name='Lower Bound',
+        x=data.index, y=boundary_upper,
+        mode='lines', name='Upper Bound',
         line=boundary))
 
     fig.add_trace(go.Scatter(
-        x=data.index, y=lowpass - m - n*s,
-        mode='lines', name='Upper Bound',
+        x=data.index, y=boundary_lower,
+        mode='lines', name='Lower Bound',
         line=boundary, fill='tonexty', fillcolor='rgba(255,0,0,0.05)'))
 
     # plot seasonal trend
@@ -118,13 +127,13 @@ def plot_LOF(data, key:str, **kwargs):
 def plot_STL(data, area, group, **kwargs):
     '''
     Defaults:
-    period=24*15, robust=False, seasonal=7,
+    period=24*7*4, robust=False, seasonal=7,
     trend=If not provided uses the smallest odd
-    integer greater than 1.5 * period / (1 - 1.5 / seasonal)
+    integer greater than 1.5 * period / (1 - (1.5 / seasonal))
     '''
     # reorganize the dataframe
     data = data.copy().reset_index().set_index(
-        ['priceArea', 'productionGroup', 'startTime']
+        ['priceArea', st.session_state.column, 'startTime']
         ).sort_index()
     
     stl = STL(
@@ -157,8 +166,8 @@ def plot_STFT(data, area, group, **kwargs):
         data.loc[area, group]['quantityKwh'],
         fs=1,
         window='hann',
-        nperseg=kwargs.get('nperseg', 256),
-        noverlap=kwargs.get('noverlap', 128),
+        nperseg=kwargs.get('nperseg', 31),
+        noverlap=kwargs.get('noverlap', 30),
         boundary=None)
 
     fig = go.Figure(data=go.Heatmap(
@@ -170,8 +179,7 @@ def plot_STFT(data, area, group, **kwargs):
     fig.update_layout(
         title=f'STFT Spectrogram for {area} - {group}',
         xaxis_title='Time [days]',
-        yaxis_title='Frequency [cycles per day]')
-    
-
+        yaxis_title='Frequency [cycles per hour]',
+    )
     
     return fig
