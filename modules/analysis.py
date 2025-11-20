@@ -162,6 +162,8 @@ def plot_STL(data, area, group, **kwargs):
 # plot the STFT spectrogram
 @st.cache_data
 def plot_STFT(data, area, group, **kwargs):
+    db = kwargs.get('db', False)
+
     f, t, Zxx = stft(
         data.loc[area, group]['quantityKwh'],
         fs=1,
@@ -169,10 +171,16 @@ def plot_STFT(data, area, group, **kwargs):
         nperseg=kwargs.get('nperseg', 31),
         noverlap=kwargs.get('noverlap', 30),
         boundary=None)
+    
+    # if dB: convert Zxx to dB scale
+    if db:
+        Zxx = 20 * np.log10(np.abs(Zxx) + 1e-10)
+    else:
+        Zxx = np.abs(Zxx)
 
     fig = go.Figure(data=go.Heatmap(
-        z=np.abs(Zxx),
-        x=t / 24,
+        z=Zxx,
+        x=t / 24,  # convert to days
         y=f,
         colorscale='Viridis'))
 

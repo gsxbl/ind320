@@ -116,6 +116,8 @@ class NewA:
             self._noverlap = st.number_input(
                 'Number of Overlapping Samples', min_value=0, value=30, step=1
             )
+            self._decibel = st.checkbox('Display in Decibel (dB)', value=True,
+                                        key='decibel')
     
     def _plot_stl(self):
         '''
@@ -137,13 +139,14 @@ class NewA:
         if not st.session_state.group:
             st.warning('Please select at least one production group to plot STFT spectrogram.')
             return
-        
+
         fig = plot_STFT(
             self._df,
             st.session_state.area,
             st.session_state.group[0],
             nperseg=self._nperseg,
-            noverlap=self._noverlap
+            noverlap=self._noverlap,
+            db=self._decibel
         )
         st.plotly_chart(fig)
 
