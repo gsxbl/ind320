@@ -46,6 +46,8 @@ class Mongo:
         start_time = kwargs.get('start_time', None)
         end_time = kwargs.get('end_time', None)
 
+        index = kwargs.get('index', None)
+        table = kwargs.get('table', 'elhub')
 
         if timescale == 'Monthly':
             # compute next month as datetime
@@ -79,7 +81,7 @@ class Mongo:
                     '$lte': end_time
                 }
             }
-        return _self.find(query=query, **kwargs)
+        return _self.find(query=query, index=index, table=table)
     
     @st.cache_data(ttl=600)
     def mean_by_area(_self, **kwargs):

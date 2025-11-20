@@ -83,10 +83,10 @@ class NewA:
             robust = st.checkbox('Robust', value=False)
             
             period = st.number_input(
-                'Period, default = 24 * 7 * 4', min_value=1, value=default_period, step=1
+                f'Period, default = {period}', min_value=1, value=default_period, step=1
             )
             seasonal = st.number_input(
-                'Seasonal, default = 7', min_value=7, value=7, step=2
+                f'Seasonal, default = 7', min_value=7, value=7, step=2
             )
            # compute trend min
             trend_min = int(1.5 * period / (1 - (1.5 / seasonal)))
@@ -94,7 +94,7 @@ class NewA:
                 trend_min += 1  # make it odd
             
             trend = st.number_input(
-                'Trend, default = odd int > 1.5 * period / (1 - (1.5 / seasonal))',
+                'Trend, default = first odd int > 1.5 * period / (1 - (1.5 / seasonal))',
                 min_value=trend_min, value=trend_min, step=2
             )
 
@@ -116,6 +116,8 @@ class NewA:
             self._noverlap = st.number_input(
                 'Number of Overlapping Samples', min_value=0, value=30, step=1
             )
+            self._decibel = st.checkbox('Display in Decibel (dB)', value=True,
+                                        key='decibel')
     
     def _plot_stl(self):
         '''
@@ -137,13 +139,14 @@ class NewA:
         if not st.session_state.group:
             st.warning('Please select at least one production group to plot STFT spectrogram.')
             return
-        
+
         fig = plot_STFT(
             self._df,
             st.session_state.area,
             st.session_state.group[0],
             nperseg=self._nperseg,
-            noverlap=self._noverlap
+            noverlap=self._noverlap,
+            db=self._decibel
         )
         st.plotly_chart(fig)
 
