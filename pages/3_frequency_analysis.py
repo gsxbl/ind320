@@ -83,10 +83,10 @@ class NewA:
             robust = st.checkbox('Robust', value=False)
             
             period = st.number_input(
-                'Period, default = 24 * 7 * 4', min_value=1, value=default_period, step=1
+                f'Period, default = {period}', min_value=1, value=default_period, step=1
             )
             seasonal = st.number_input(
-                'Seasonal, default = 7', min_value=7, value=7, step=2
+                f'Seasonal, default = 7', min_value=7, value=7, step=2
             )
            # compute trend min
             trend_min = int(1.5 * period / (1 - (1.5 / seasonal)))
@@ -94,7 +94,7 @@ class NewA:
                 trend_min += 1  # make it odd
             
             trend = st.number_input(
-                'Trend, default = odd int > 1.5 * period / (1 - (1.5 / seasonal))',
+                'Trend, default = first odd int > 1.5 * period / (1 - (1.5 / seasonal))',
                 min_value=trend_min, value=trend_min, step=2
             )
 
