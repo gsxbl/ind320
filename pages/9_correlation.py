@@ -136,6 +136,29 @@ class SlidingWindow:
             window=self._window_size, center=True
             ).corr(self._df['quantityKwh'])
 
+    def _window_slider(self):
+        '''slider to select center of sliding window'''
+        options = self._rolling.dropna().index
+        
+        if options.empty:
+            st.warning('No rolling correlation values to display.')
+            return
+        
+        opts = list(options)
+        mid_idx = len(opts) // 2
+
+        # keep center aligned with available options
+        if st.session_state.get('center') not in options:
+            st.session_state.center = opts[mid_idx]
+
+        # with self._exp:
+        st.select_slider(
+            'Select center of sliding window',
+            options=list(options),
+            value=st.session_state.center,
+            key='center'
+        )
+
     ### PLOTTING METHODS ###
     def _setup_figure(self):
         '''plot the lagged correlation'''
@@ -173,7 +196,7 @@ class SlidingWindow:
             )
         
         self._fig.update_layout(
-            height=800,
+            height=400,
             title_text=f'Sliding Window Correlation between '\
                  f'{st.session_state.kind} and {self._y.name} with lag {self._lag} timepoints'
         )
@@ -222,30 +245,7 @@ class SlidingWindow:
         '''render the plotly figure'''
         st.plotly_chart(self._fig, width='stretch')
 
-    def _window_slider(self):
-        '''slider to select center of sliding window'''
-        options = self._rolling.dropna().index
-
-        if options.empty:
-            st.warning('No rolling correlation values to display.')
-            return
-        
-        opts = list(options)
-        mid_idx = len(opts) // 2
-
-        # keep center aligned with available options
-        if st.session_state.get('center') not in options:
-            st.session_state.center = opts[mid_idx]
-
-        with self._exp:
-            st.select_slider(
-                'Select center of sliding window',
-                options=list(options),
-                value=st.session_state.center,
-                key='center'
-            )
-
-
+    ### RUN METHOD ###
     def run(self):
         # load data
         self._get_weather_data()
