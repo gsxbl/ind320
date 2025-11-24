@@ -31,7 +31,7 @@ class Snow:
         if st.session_state.selection == None:
             loc = f'Location {st.session_state.last_clicked} not in known priceArea'
         else:
-            loc = st.session_state.city
+            loc = f'Location {st.session_state.last_clicked} in {st.session_state.selection}'
 
         with col1:
 
