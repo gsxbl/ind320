@@ -113,7 +113,10 @@ class MapApp:
         """Show selection info next to the map."""
         with self._c2:
             st.subheader('Selection')
-            area = st.session_state.area
+            if st.session_state.selection:
+                area = st.session_state.area
+            else:
+                area = None
             st.write(f"priceArea: {area or 'n/a'}")
 
             lat, lon = st.session_state.last_clicked
