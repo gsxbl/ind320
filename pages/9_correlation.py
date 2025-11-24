@@ -54,6 +54,14 @@ class SlidingWindow:
         with self._exp:
             self._c1, self._c2 = st.columns(2)
 
+    def _setup_window_size(self):
+        '''setup sliding window size slider'''
+        hours = (st.session_state.end_time - st.session_state.start_time).total_seconds() // 3600
+        self._hours = int(hours)
+        with self._c2:
+            self._window_size = st.slider(
+                'Select Sliding Window Size [hours]', 1, self._hours, self._hours//8)
+    
     def _setup_lag_ui(self):
         '''set up a single slider to select lag value'''
         with self._c1:
@@ -69,13 +77,6 @@ class SlidingWindow:
             )
             self._lag = st.session_state.lag
 
-    def _setup_window_size(self):
-        '''setup sliding window size slider'''
-        hours = (st.session_state.end_time - st.session_state.start_time).total_seconds() // 3600
-        self._hours = int(hours)
-        with self._c2:
-            self._window_size = st.slider(
-                'Select Sliding Window Size [hours]', 1, self._hours, self._hours//8)
 
     def _setup_kind_ui(self):
         '''setup selevtor for kind of weather data'''
@@ -138,7 +139,7 @@ class SlidingWindow:
 
     def _window_slider(self):
         '''slider to select center of sliding window'''
-        options = self._rolling.dropna().index
+        options = self._rolling.index
         
         if options.empty:
             st.warning('No rolling correlation values to display.')
@@ -148,7 +149,7 @@ class SlidingWindow:
         mid_idx = len(opts) // 2
 
         # keep center aligned with available options
-        if st.session_state.get('center') not in options:
+        if 'center' not in st.session_state or st.session_state.center not in options:
             st.session_state.center = opts[mid_idx]
 
         # with self._exp:
