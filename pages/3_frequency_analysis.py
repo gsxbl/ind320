@@ -129,7 +129,7 @@ class NewA:
             st.session_state.group[0],
             **self._stl_kwargs
         )
-
+        fig.update_layout(height=600)
         st.plotly_chart(fig)
 
     def _plot_stft(self):
@@ -148,6 +148,7 @@ class NewA:
             noverlap=self._noverlap,
             db=self._decibel
         )
+        fig.update_layout(height=600)
         st.plotly_chart(fig)
 
     # --- PAGE CONTENTS ---
