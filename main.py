@@ -8,9 +8,7 @@ class Main:
 
     def __init__(self):
         self._configure_page()
-        SessionState()
-        with st.spinner('Loading...'):
-            Header(render=False)
+
 
         self._pages_structure = {
             "📊 Weather": [
@@ -33,11 +31,13 @@ class Main:
                 ("Droids", "pages/7_page_five.py"),
             ],
         }
+        
 
         self._pages = self._create_pages()
         self._home_page = st.Page(self._home, title="Home")
 
     def _configure_page(self):
+        '''make a nice pleasant page config'''
         title = st.session_state.get('app_title', 'IND320 Streamlit App')
         layout = st.session_state.get('app_layout', 'wide')
         sidebar_state = st.session_state.get('app_sidebar', 'auto')
@@ -112,6 +112,11 @@ class Main:
         self._render_sidebar()
         nav = st.navigation([self._home_page] + self._all_pages())
         nav.run()
+
+        SessionState()
+        with st.spinner('Loading...'):
+            Header(render=False)
+        
 
 
 if __name__ == '__main__':
